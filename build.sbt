@@ -1,3 +1,5 @@
+import Dependencies.*
+
 ThisBuild / tlBaseVersion := "1.0"
 
 ThisBuild / organization     := "io.github.takapi327"
@@ -36,17 +38,22 @@ lazy val compileSettings = Def.settings(
 )
 
 lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
-  .crossType(CrossType.Pure)
-  .withoutSuffixFor(JVMPlatform)
+  .crossType(CrossType.Full)
   .in(file("modules/ldbc-connector"))
   .settings(compileSettings)
   .settings(
+    name := "ldbc-connector",
     description := "MySQL connector for native Scala",
+    libraryDependencies ++= Seq(
+      cats,
+      catsEffect,
+      "org.scodec" %%% "scodec-bits" % "1.1.38",
+      "org.scodec" %%% "scodec-core" % "2.2.2",
+      "org.scodec" %%% "scodec-cats" % "1.2.0",
+    )
   )
 
 lazy val root = tlCrossRootProject
+  .settings(name := "scala-jvm-js-native-example")
   .settings(compileSettings)
-  .settings(
-    run / fork := true,
-  )
   .aggregate(connector)
