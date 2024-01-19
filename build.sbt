@@ -1,4 +1,4 @@
-import Dependencies.*
+import Dependencies._
 
 ThisBuild / tlBaseVersion := "1.0"
 
@@ -18,23 +18,7 @@ ThisBuild / githubWorkflowJavaVersions := Seq(
 )
 
 lazy val compileSettings = Def.settings(
-  // 警告をエラーにする
-  tlFatalWarnings := true,
-
-  // デフォルトで設定されるがうまくいかないものを外す
-  scalacOptions --= Seq(
-    // Scala 3.0.1以降だとうまく動かない
-    // https://github.com/lampepfl/dotty/issues/14952
-    "-Ykind-projector:underscores",
-  ),
-  Test / scalacOptions --= Seq(
-    // テストだとちょっと厳しすぎる
-    "-Wunused:locals",
-  ),
-  Compile / console / scalacOptions --= Seq(
-    // コンソールで import した瞬間はまだ使ってないから当然許したい
-    "-Wunused:imports",
-  ),
+  tlFatalWarnings := true
 )
 
 lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
