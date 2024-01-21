@@ -32,7 +32,7 @@ trait MessageSocket[F[_]]:
    * Receive the next `BackendMessage`, or raise an exception if EOF is reached before a complete
    * message arrives.
    */
-  def receive: F[ResponsePacket]
+  def receive: F[Packet]
 
   /** Send the specified message. */
   def send(message: Message): F[Unit]
@@ -61,7 +61,7 @@ object MessageSocket:
          * Messages are prefixed with a 5-byte header consisting of a tag (byte) and a length (int32,
          * total including self but not including the tag) in network order.
          */
-        def receiveImpl: F[ResponsePacket] =
+        val receiveImpl: F[Packet] =
          (for
            header <- bvs.read(4)
            payloadSize = parseHeader(header.toByteArray)
@@ -70,7 +70,7 @@ object MessageSocket:
            case t => debug(s" ← ${AnsiColor.RED}${t.getMessage}${AnsiColor.RESET}")
          }
 
-        override def receive: F[ResponsePacket] =
+        override def receive: F[Packet] =
           for
             msg <- receiveImpl
             _ <- cb.offer(Right(msg))
