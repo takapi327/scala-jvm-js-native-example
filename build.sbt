@@ -1,5 +1,5 @@
-import Dependencies._
-import BuildSettings._
+import Dependencies.*
+import BuildSettings.*
 
 ThisBuild / tlBaseVersion := "1.0"
 
@@ -41,14 +41,20 @@ lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     libraryDependencies ++= Seq(
       cats,
       catsEffect,
+      ip4s,
       "org.scodec" %%% "scodec-bits" % "1.1.38",
       "org.scodec" %%% "scodec-core" % "2.2.2",
       "org.scodec" %%% "scodec-cats" % "1.2.0",
-    )
+      "org.typelevel" %%% "otel4s-core-trace" % "0.4.0"
+    ) ++ fs2
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val root = tlCrossRootProject
+lazy val root = (project in file("."))
   .settings(name := "scala-jvm-js-native-example")
   .settings(compileSettings)
-  .aggregate(connector)
+  .settings(libraryDependencies ++= Seq(
+    "org.tpolecat" % "natchez-core_3" % "0.3.5"
+  ))
+  .settings(run / fork := true)
+  .dependsOn(connector.jvm)
