@@ -6,18 +6,35 @@
 
 package ldbc.connector.authenticator
 
-import java.security.MessageDigest
+import scala.scalajs.js
+import scala.scalajs.js.typedarray.{ ArrayBuffer, Uint8Array }
 
 class MysqlNativePasswordPlugin extends AuthenticationPlugin:
+
+  private val crypto = js.Dynamic.global.require("crypto")
 
   override def name: String = "mysql_native_password"
 
   override def hashPassword(password: String, scramble: Array[Byte]): Array[Byte] =
     if password.isEmpty then Array[Byte]()
     else
-      val sha1 = MessageDigest.getInstance("SHA-1")
-      val hash1 = sha1.digest(password.getBytes("UTF-8"))
-      val hash2 = sha1.digest(hash1)
+      val hash1 = sha1(password.getBytes("UTF-8"))
+      val hash2 = sha1(hash1)
+      val hash3 = sha1(scramble ++ hash2)
 
-      val hash3 = sha1.digest(scramble ++ hash2)
       hash1.zip(hash3).map { case (a, b) => (a ^ b).toByte }
+
+  private def sha1(data: Array[Byte]): Array[Byte] =
+    val hash = crypto.createHash("sha1")
+    val buffer = new ArrayBuffer(data.length)
+    val uint8Array = new Uint8Array(buffer)
+    for (i <- data.indices) {
+      uint8Array(i) = data(i)
+    }
+    hash.update(uint8Array)
+    val digest = hash.digest()
+    val result = new Array[Byte](digest.length.asInstanceOf[Int])
+    for (i <- result.indices) {
+      result(i) = digest(i).asInstanceOf[Byte]
+    }
+    result

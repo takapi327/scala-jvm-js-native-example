@@ -16,8 +16,9 @@ class MysqlNativePasswordPlugin extends AuthenticationPlugin:
     if password.isEmpty then Array[Byte]()
     else
       val sha1 = MessageDigest.getInstance("SHA-1")
+
       val hash1 = sha1.digest(password.getBytes("UTF-8"))
       val hash2 = sha1.digest(hash1)
-
       val hash3 = sha1.digest(scramble ++ hash2)
+
       hash1.zip(hash3).map { case (a, b) => (a ^ b).toByte }
