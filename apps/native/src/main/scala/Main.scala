@@ -22,12 +22,12 @@ object Main extends IOApp:
 
   val session: Resource[IO, Session[IO]] =
     Session.single(
-      host = "127.0.0.1",
-      port = 13306,
-      user = "root",
+      host     = "127.0.0.1",
+      port     = 13306,
+      user     = "root",
       password = Some("root"),
-      debug = true,
-      ssl = SSL.None,
+      debug    = true,
+      ssl      = SSL.None
     )
 
   override def run(args: List[String]): IO[ExitCode] =

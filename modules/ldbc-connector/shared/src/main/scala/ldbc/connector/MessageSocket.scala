@@ -17,7 +17,7 @@ import cats.effect.std.*
 
 import fs2.io.net.Socket
 
-import ldbc.connector.net.{SSLNegotiation, BitVectorSocket}
+import ldbc.connector.net.{ SSLNegotiation, BitVectorSocket }
 import ldbc.connector.net.message.Message
 import ldbc.connector.net.packet.*
 
@@ -42,8 +42,8 @@ trait MessageSocket[F[_]]:
 
 object MessageSocket:
 
-  def fromBitVectorSocket[F[_] : Concurrent : Console](
-    bvs: BitVectorSocket[F],
+  def fromBitVectorSocket[F[_]: Concurrent: Console](
+    bvs:          BitVectorSocket[F],
     debugEnabled: Boolean
   ): F[MessageSocket[F]] =
     Queue.circularBuffer[F, Either[Any, Any]](10).map { cb =>
@@ -55,30 +55,30 @@ object MessageSocket:
           if debugEnabled then Console[F].println(msg) else Concurrent[F].unit
 
         private def parseHeader(headerBytes: Array[Byte]): Int =
-          (headerBytes(0) & 0xFF) | ((headerBytes(1) & 0xFF) << 8) | ((headerBytes(2) & 0xFF) << 16)
+          (headerBytes(0) & 0xff) | ((headerBytes(1) & 0xff) << 8) | ((headerBytes(2) & 0xff) << 16)
 
         /**
          * Messages are prefixed with a 5-byte header consisting of a tag (byte) and a length (int32,
          * total including self but not including the tag) in network order.
          */
         val receiveImpl: F[Packet] =
-         (for
-           header <- bvs.read(4)
-           payloadSize = parseHeader(header.toByteArray)
-           payload <- bvs.read(payloadSize)
-         yield ResponsePacket(header, payload)).onError {
-           case t => debug(s" ← ${AnsiColor.RED}${t.getMessage}${AnsiColor.RESET}")
-         }
+          (for
+            header <- bvs.read(4)
+            payloadSize = parseHeader(header.toByteArray)
+            payload <- bvs.read(payloadSize)
+          yield ResponsePacket(header, payload)).onError {
+            case t => debug(s" ← ${ AnsiColor.RED }${ t.getMessage }${ AnsiColor.RESET }")
+          }
 
         override def receive: F[Packet] =
           for
             msg <- receiveImpl
-            _ <- cb.offer(Right(msg))
-            _ <- debug(s" ← ${AnsiColor.GREEN}$msg${AnsiColor.RESET}")
+            _   <- cb.offer(Right(msg))
+            _   <- debug(s" ← ${ AnsiColor.GREEN }$msg${ AnsiColor.RESET }")
           yield msg
 
         override def send(message: Message): F[Unit] =
-          debug(s" → ${AnsiColor.YELLOW}$message${AnsiColor.RESET}") *>
+          debug(s" → ${ AnsiColor.YELLOW }$message${ AnsiColor.RESET }") *>
             bvs.write(message.encode) *>
             cb.offer(Left(message))
 
@@ -87,19 +87,19 @@ object MessageSocket:
             def pump(acc: List[Either[Any, Any]]): F[List[Either[Any, Any]]] =
               cb.tryTake.flatMap {
                 case Some(e) => pump(e :: acc)
-                case None => Applicative[F].pure(acc.reverse)
+                case None    => Applicative[F].pure(acc.reverse)
               }
             pump(List(first))
           }
     }
 
   def apply[F[_]: Console: Temporal](
-    debug: Boolean,
-    sockets: Resource[F, Socket[F]],
-    sslOptions: Option[SSLNegotiation.Options[F]],
+    debug:       Boolean,
+    sockets:     Resource[F, Socket[F]],
+    sslOptions:  Option[SSLNegotiation.Options[F]],
     readTimeout: Duration
   ): Resource[F, MessageSocket[F]] =
     for
       bvs <- BitVectorSocket[F](sockets, sslOptions, readTimeout)
-      ms <- Resource.eval(fromBitVectorSocket(bvs, debug))
+      ms  <- Resource.eval(fromBitVectorSocket(bvs, debug))
     yield ms

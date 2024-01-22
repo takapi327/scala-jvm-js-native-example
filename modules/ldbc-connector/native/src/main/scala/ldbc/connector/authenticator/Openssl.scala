@@ -24,10 +24,10 @@ private[ldbc] object Openssl:
   def EVP_get_digestbyname(name: Ptr[CChar]): Ptr[EVP_MD] = extern
 
   def EVP_Digest(
-    data: Ptr[Byte],
-    count: CSize,
-    md: Ptr[Byte],
-    size: Ptr[CUnsignedInt],
+    data:   Ptr[Byte],
+    count:  CSize,
+    md:     Ptr[Byte],
+    size:   Ptr[CUnsignedInt],
     `type`: Ptr[EVP_MD],
-    impl: Ptr[ENGINE]
+    impl:   Ptr[ENGINE]
   ): CInt = extern

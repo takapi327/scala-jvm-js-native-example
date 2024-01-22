@@ -12,10 +12,10 @@ import scodec.Decoder
 import scodec.bits.BitVector
 
 case class ResponsePacket(
-  header: BitVector,
+  header:  BitVector,
   payload: BitVector
 ) extends Packet:
-  
+
   private val payloadBytes: Chunk[Byte] = Chunk.array(payload.toByteArray)
 
   def isErrorPacket: Boolean = (payloadBytes(0) & 0xff) == ResponsePacket.TYPE_ID_ERROR
@@ -33,10 +33,10 @@ case class ResponsePacket(
   def to[M](decoder: Decoder[M]): M = decoder.decode(payload).require.value
 
 object ResponsePacket:
-  val TYPE_ID_ERROR: Int = 0xFF
-  val TYPE_ID_EOF: Int = 0xFE
-  val TYPE_ID_AUTH_SWITCH: Int = 0xFE
-  val TYPE_ID_LOCAL_INFILE: Int = 0xFB
-  val TYPE_ID_OK: Int = 0
-  val TYPE_ID_AUTH_MORE_DATA: Int = 0x01
+  val TYPE_ID_ERROR:            Int = 0xff
+  val TYPE_ID_EOF:              Int = 0xfe
+  val TYPE_ID_AUTH_SWITCH:      Int = 0xfe
+  val TYPE_ID_LOCAL_INFILE:     Int = 0xfb
+  val TYPE_ID_OK:               Int = 0
+  val TYPE_ID_AUTH_MORE_DATA:   Int = 0x01
   val TYPE_ID_AUTH_NEXT_FACTOR: Int = 0x02

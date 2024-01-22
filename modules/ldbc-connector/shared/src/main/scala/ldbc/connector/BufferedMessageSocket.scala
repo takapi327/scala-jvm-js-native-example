@@ -12,7 +12,7 @@ import cats.*
 import cats.syntax.all.*
 
 import cats.effect.*
-import cats.effect.std.{Console, Queue}
+import cats.effect.std.{ Console, Queue }
 import cats.effect.implicits.*
 
 import fs2.io.net.Socket
@@ -39,15 +39,15 @@ object BufferedMessageSocket:
    */
   private case class NetworkError(cause: Throwable) extends Packet
 
-  def apply[F[_] : Temporal : Console](
-    queueSize: Int,
-    debug: Boolean,
-    sockets: Resource[F, Socket[F]],
-    sslOptions: Option[SSLNegotiation.Options[F]],
+  def apply[F[_]: Temporal: Console](
+    queueSize:   Int,
+    debug:       Boolean,
+    sockets:     Resource[F, Socket[F]],
+    sslOptions:  Option[SSLNegotiation.Options[F]],
     readTimeout: Duration
   ): Resource[F, BufferedMessageSocket[F]] =
     for
-      ms <- MessageSocket[F](debug, sockets, sslOptions, readTimeout)
+      ms  <- MessageSocket[F](debug, sockets, sslOptions, readTimeout)
       ams <- Resource.make(BufferedMessageSocket.fromMessageSocket[F](ms, queueSize))(_.terminate)
     yield ams
 
@@ -56,18 +56,18 @@ object BufferedMessageSocket:
    * with asynchronous messages, and messages that require us to record a bit of information that
    * the user might ask for later.
    */
-  private def next[F[_] : MonadThrow](
+  private def next[F[_]: MonadThrow](
     ms: MessageSocket[F],
-    //xaSig: Ref[F, TransactionStatus],
-    //paSig: Ref[F, Map[String, String]],
-    //bkDef: Deferred[F, BackendKeyData],
-    //noTop: Topic[F, Notification[String]],
+    // xaSig: Ref[F, TransactionStatus],
+    // paSig: Ref[F, Map[String, String]],
+    // bkDef: Deferred[F, BackendKeyData],
+    // noTop: Topic[F, Notification[String]],
     queue: Queue[F, Packet]
   ): F[Unit] =
     def step: F[Unit] = ms.receive.flatMap(packet => queue.offer(packet)) >> step
 
     step.attempt.flatMap {
-      case Left(e) => queue.offer(NetworkError(e)) // publish the failure
+      case Left(e)  => queue.offer(NetworkError(e)) // publish the failure
       case Right(_) => Monad[F].unit
     }
 
@@ -77,11 +77,11 @@ object BufferedMessageSocket:
    * are queued up and are typically consumed immediately, so a small queue size is probably fine.
    */
   def fromMessageSocket[F[_]: Concurrent: Console](
-    ms: MessageSocket[F],
+    ms:        MessageSocket[F],
     queueSize: Int
   ): F[BufferedMessageSocket[F]] =
     for
-      term <- Ref[F].of[Option[Throwable]](None)
+      term  <- Ref[F].of[Option[Throwable]](None)
       queue <- Queue.bounded[F, Packet](queueSize)
       fib   <- next(ms, queue).start
     yield new BufferedMessageSocket[F]:
@@ -95,14 +95,14 @@ object BufferedMessageSocket:
           case None =>
             queue.take.flatMap {
               case e: NetworkError => term.set(Some(e.cause)) *> receive
-              case m => m.pure[F]
+              case m               => m.pure[F]
             }
         }
 
       override def send(message: Message): F[Unit] =
         term.get.flatMap {
           case Some(t) => Concurrent[F].raiseError(t)
-          case None => ms.send(message)
+          case None    => ms.send(message)
         }
 
       override protected def terminate: F[Unit] =

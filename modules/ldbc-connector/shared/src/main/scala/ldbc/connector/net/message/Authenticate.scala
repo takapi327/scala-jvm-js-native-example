@@ -25,24 +25,23 @@ case class Authenticate(user: String, hashedPassword: Array[Byte], pluginName: S
 
 object Authenticate:
 
-  val encoder: Encoder[Authenticate] = Encoder {
-    auth =>
-      val capabilityFlags = hex"07a23e19".bits
-      val maxPacketSize = hex"ffffff00".bits
-      val characterSet = hex"ff".bits
-      val userBytes = auth.user.getBytes("UTF-8")
+  val encoder: Encoder[Authenticate] = Encoder { auth =>
+    val capabilityFlags = hex"07a23e19".bits
+    val maxPacketSize   = hex"ffffff00".bits
+    val characterSet    = hex"ff".bits
+    val userBytes       = auth.user.getBytes("UTF-8")
 
-      val reserved = BitVector.fill(23 * 8)(false) // 23 bytes of zero
+    val reserved = BitVector.fill(23 * 8)(false) // 23 bytes of zero
 
-      val pluginBytes = auth.pluginName.getBytes("UTF-8")
+    val pluginBytes = auth.pluginName.getBytes("UTF-8")
 
-      Attempt.successful(
-        capabilityFlags |+|
-          maxPacketSize |+|
-          characterSet |+|
-          reserved |+|
-          BitVector(copyOf(userBytes, userBytes.length + 1)) |+|
-          BitVector(copyOf(auth.hashedPassword, auth.hashedPassword.length)) |+|
-          BitVector(copyOf(pluginBytes, pluginBytes.length + 2))
-      )
+    Attempt.successful(
+      capabilityFlags |+|
+        maxPacketSize |+|
+        characterSet |+|
+        reserved |+|
+        BitVector(copyOf(userBytes, userBytes.length + 1)) |+|
+        BitVector(copyOf(auth.hashedPassword, auth.hashedPassword.length)) |+|
+        BitVector(copyOf(pluginBytes, pluginBytes.length + 2))
+    )
   }

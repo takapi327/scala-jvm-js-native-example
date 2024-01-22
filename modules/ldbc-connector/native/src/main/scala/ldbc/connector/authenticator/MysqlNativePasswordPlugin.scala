@@ -27,12 +27,11 @@ class MysqlNativePasswordPlugin extends AuthenticationPlugin:
       hash1.zip(hash3).map { case (a, b) => (a ^ b).toByte }
 
   private def sha1(data: Array[Byte]): Array[Byte] =
-    val md = new Array[Byte](EVP_MAX_MD_SIZE)
-    val size = stackalloc[CUnsignedInt]()
+    val md     = new Array[Byte](EVP_MAX_MD_SIZE)
+    val size   = stackalloc[CUnsignedInt]()
     val `type` = EVP_get_digestbyname(c"SHA1")
-    if (`type` == null)
-      throw new RuntimeException("EVP_get_digestbyname")
+    if `type` == null then throw new RuntimeException("EVP_get_digestbyname")
     val input = ByteVector(data)
-    if (EVP_Digest(input.toArrayUnsafe.atUnsafe(0), input.size.toULong, md.atUnsafe(0), size, `type`, null) != 1)
+    if EVP_Digest(input.toArrayUnsafe.atUnsafe(0), input.size.toULong, md.atUnsafe(0), size, `type`, null) != 1 then
       throw new RuntimeException("EVP_Digest")
     ByteVector.view(md, 0, (!size).toInt).toArray

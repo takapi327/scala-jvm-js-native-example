@@ -11,14 +11,14 @@ import org.typelevel.otel4s.Attribute
 class LdbcException(
   sql:      Option[String],
   message:  String,
-  position: Option[Int]                   = None,
-  detail:   Option[String]                = None,
-  hint:     Option[String]                = None,
-  //history:  List[Either[Any, Any]]        = Nil,
-  //arguments:       List[(Type, Option[Encoded])] = Nil,
-  //sqlOrigin:       Option[Origin]                = None,
-  //argumentsOrigin: Option[Origin]                = None,
-  //callSite:        Option[CallSite]              = None
+  position: Option[Int]    = None,
+  detail:   Option[String] = None,
+  hint:     Option[String] = None
+  // history:  List[Either[Any, Any]]        = Nil,
+  // arguments:       List[(Type, Option[Encoded])] = Nil,
+  // sqlOrigin:       Option[Origin]                = None,
+  // argumentsOrigin: Option[Origin]                = None,
+  // callSite:        Option[CallSite]              = None
 ) extends Exception(message):
 
   def fields: List[Attribute[?]] =

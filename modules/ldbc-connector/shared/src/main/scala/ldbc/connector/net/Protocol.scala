@@ -41,18 +41,18 @@ object Protocol:
    * Resource yielding a new `Protocol` with the given `host` and `port`.
    */
   def apply[F[_]: Temporal: Tracer: Console](
-    debug: Boolean,
-    sockets: Resource[F, Socket[F]],
-    sslOptions: Option[SSLNegotiation.Options[F]],
-    readTimeout: Duration,
+    debug:       Boolean,
+    sockets:     Resource[F, Socket[F]],
+    sslOptions:  Option[SSLNegotiation.Options[F]],
+    readTimeout: Duration
   ): Resource[F, Protocol[F]] =
     for
-      bms <- BufferedMessageSocket[F](256, debug, sockets, sslOptions, readTimeout)
+      bms      <- BufferedMessageSocket[F](256, debug, sockets, sslOptions, readTimeout)
       protocol <- Resource.eval(fromMessageSocket[F](bms))
     yield protocol
 
   def fromMessageSocket[F[_]: Concurrent: Tracer](
-    bms: BufferedMessageSocket[F],
+    bms: BufferedMessageSocket[F]
   ): F[Protocol[F]] =
     Exchange[F].map { ex =>
       new Protocol[F]:
@@ -61,19 +61,22 @@ object Protocol:
           val plugin = initialPacket.authPlugin match
             case "mysql_native_password" => new MysqlNativePasswordPlugin
             case "caching_sha2_password" => CachingSha2PasswordPlugin(Some(password), None)
-            case _ => throw new Exception(s"Unknown plugin: ${initialPacket.authPlugin}")
+            case _                       => throw new Exception(s"Unknown plugin: ${ initialPacket.authPlugin }")
 
           val hashedPassword = plugin.hashPassword(password, initialPacket.scrambleBuff)
 
           val authentication = Authenticate(user, Array(hashedPassword.length.toByte) ++ hashedPassword, plugin.name)
 
           bms.send(authentication) <* bms.receive.flatMap {
-            case res: ResponsePacket if res.isAuthMethodSwitchRequestPacket => Concurrent[F].raiseError(new Exception("Authentication Method Switch Request"))
-            case res: ResponsePacket if res.isAuthNextFactorPacket => Concurrent[F].raiseError(new Exception("Authentication Next Factor"))
+            case res: ResponsePacket if res.isAuthMethodSwitchRequestPacket =>
+              Concurrent[F].raiseError(new Exception("Authentication Method Switch Request"))
+            case res: ResponsePacket if res.isAuthNextFactorPacket =>
+              Concurrent[F].raiseError(new Exception("Authentication Next Factor"))
             case res: ResponsePacket if res.isAuthMoreDataPacket => bms.receive *> Concurrent[F].unit
-            case res: ResponsePacket if res.isOKPacket => Concurrent[F].unit
-            case res: ResponsePacket if res.isErrorPacket => Concurrent[F].raiseError(new Exception("Authentication failed"))
+            case res: ResponsePacket if res.isOKPacket           => Concurrent[F].unit
+            case res: ResponsePacket if res.isErrorPacket =>
+              Concurrent[F].raiseError(new Exception("Authentication failed"))
             case res: ResponsePacket if res.isEOFPacket => Concurrent[F].raiseError(new Exception("EOF Packet"))
-            case _ => Concurrent[F].raiseError(new Exception("Unknown packet"))
+            case _                                      => Concurrent[F].raiseError(new Exception("Unknown packet"))
           }
     }

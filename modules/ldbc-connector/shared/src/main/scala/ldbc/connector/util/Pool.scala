@@ -20,11 +20,11 @@ object Pool:
   /** Class of exceptions raised when a resource leak is detected on pool finalization. */
   final case class ResourceLeak(expected: Int, actual: Int, deferrals: Int)
     extends LdbcException(
-      sql = None,
+      sql     = None,
       message = s"A resource leak was detected during pool finalization.",
-      detail = Some(s"Expected $expected active slot(s) and no deferrals, found $actual slots and $deferrals deferral(s)."),
-      hint = Some(
-        """
+      detail =
+        Some(s"Expected $expected active slot(s) and no deferrals, found $actual slots and $deferrals deferral(s)."),
+      hint = Some("""
           |The most common causes of resource leaks are (a) using a pool on a fiber that was neither
           |joined or canceled prior to pool finalization, and (b) using `Resource.allocated` and
           |failing to finalize allocated resources prior to pool finalization.
@@ -35,17 +35,17 @@ object Pool:
    * Exception raised to deferrals that remain during pool finalization. This indicates a
    * programming error, typically misuse of fibers.
    */
-  object ShutdownException extends LdbcException(
-      sql = None,
+  object ShutdownException
+    extends LdbcException(
+      sql     = None,
       message = "The pool is being finalized and no more resources are available.",
-      hint = Some(
-        """
+      hint = Some("""
           |The most common cause of this exception is using a pool on a fiber that was neither
           |joined or canceled prior to pool finalization.
       """.stripMargin.trim.linesIterator.mkString(" "))
     )
 
-  def ofF[F[_] : Concurrent, A](
+  def ofF[F[_]: Concurrent, A](
     rsrc: Tracer[F] => Resource[F, A],
     size: Int
   )(recycler: Recycler[F, A]): Resource[F, Tracer[F] => Resource[F, A]] =
@@ -59,7 +59,7 @@ object Pool:
     // Our pool state is a pair of queues, implemented as lists because I am lazy and it's not
     // going to matter.
     type State = (
-      List[Option[Alloc]], // deque of alloc slots (filled on the left, empty on the right)
+      List[Option[Alloc]],                        // deque of alloc slots (filled on the left, empty on the right)
       List[Deferred[F, Either[Throwable, Alloc]]] // queue of deferrals awaiting allocs
     )
 
@@ -84,17 +84,18 @@ object Pool:
             // all (defer and wait).
             ref.modify {
               case (Some(a) :: os, ds) => ((os, ds), a.pure[F])
-              case (None :: os, ds) => ((os, ds), Concurrent[F].onError(rsrc(Tracer[F]).allocated)(restore))
+              case (None :: os, ds)    => ((os, ds), Concurrent[F].onError(rsrc(Tracer[F]).allocated)(restore))
               case (Nil, ds) =>
                 val cancel = ref.flatModify { // try to remove our deferred
                   case (os, ds) =>
                     val canRemove = ds.contains(d)
-                    val cleanupMaybe = if (canRemove) // we'll pull it out before anyone can complete it
-                      ().pure[F]
-                    else // someone got to it first and will complete it, so we wait and then return it
-                      d.get.flatMap(_.liftTo[F]).onError(restore).flatMap(take(_))
+                    val cleanupMaybe =
+                      if canRemove then // we'll pull it out before anyone can complete it
+                        ().pure[F]
+                      else // someone got to it first and will complete it, so we wait and then return it
+                        d.get.flatMap(_.liftTo[F]).onError(restore).flatMap(take(_))
 
-                    ((os, if (canRemove) ds.filterNot(_ == d) else ds), cleanupMaybe)
+                    ((os, if canRemove then ds.filterNot(_ == d) else ds), cleanupMaybe)
                 }
 
                 val wait =
@@ -112,7 +113,7 @@ object Pool:
       def take(a: Alloc): F[Unit] =
         Tracer[F].span("pool.free").surround {
           recycler(a._1).onError { case _ => dispose(a) } flatMap {
-            case true => recycle(a)
+            case true  => recycle(a)
             case false => dispose(a)
           }
         }
@@ -123,7 +124,7 @@ object Pool:
         Tracer[F].span("recycle").surround {
           ref.modify {
             case (os, d :: ds) => ((os, ds), d.complete(a.asRight).void) // hand it back out
-            case (os, Nil) => ((Some(a) :: os, Nil), ().pure[F]) // return to pool
+            case (os, Nil)     => ((Some(a) :: os, Nil), ().pure[F])     // return to pool
           }.flatten
         }
 
@@ -133,10 +134,14 @@ object Pool:
       // are handled by the awaiting deferral in `give` above). Always finalize `a`
       def dispose(a: Alloc): F[Unit] =
         Tracer[F].span("dispose").surround {
-          ref.modify {
-            case (os, Nil) => ((os :+ None, Nil), ().pure[F]) // new empty slot
-            case (os, d :: ds) => ((os, ds), Concurrent[F].attempt(rsrc(Tracer[F]).allocated).flatMap(d.complete).void) // alloc now!
-          }.guarantee(a._2).flatten
+          ref
+            .modify {
+              case (os, Nil) => ((os :+ None, Nil), ().pure[F]) // new empty slot
+              case (os, d :: ds) =>
+                ((os, ds), Concurrent[F].attempt(rsrc(Tracer[F]).allocated).flatMap(d.complete).void) // alloc now!
+            }
+            .guarantee(a._2)
+            .flatten
         }
 
       // Hey, that's all we need to create our resource!
@@ -161,9 +166,9 @@ object Pool:
             ResourceLeak(size, os.length, ds.length).raiseError[F, Unit].whenA(os.length != size) *>
             os.traverse_ {
               case Some((_, free)) => free
-              case None => ().pure[F]
+              case None            => ().pure[F]
             }
 
       }
 
-    Resource.make(alloc)(free).map(a => {implicit T: Tracer[F] => poolImpl(a)})
+    Resource.make(alloc)(free).map(a => { implicit T: Tracer[F] => poolImpl(a) })

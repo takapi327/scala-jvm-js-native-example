@@ -43,23 +43,28 @@ object BitVectorSocket:
 
   private def parseHeader(chunk: Chunk[Byte]): Int =
     val headerBytes = chunk.toArray
-    (headerBytes(0) & 0xFF) | ((headerBytes(1) & 0xFF) << 8) | ((headerBytes(2) & 0xFF) << 16)
+    (headerBytes(0) & 0xff) | ((headerBytes(1) & 0xff) << 8) | ((headerBytes(2) & 0xff) << 16)
 
   def readInitialPacket[F[_]: Temporal](socket: Socket[F])(using ev: ApplicativeError[F, Throwable]): F[InitialPacket] =
     for
       header <- socket.read(4).flatMap {
-        case Some(chunk) => Monad[F].pure(chunk)
-        case None => ev.raiseError(new Exception("Failed to read header"))
-      }
+                  case Some(chunk) => Monad[F].pure(chunk)
+                  case None        => ev.raiseError(new Exception("Failed to read header"))
+                }
       payloadSize = parseHeader(header)
       payload <- socket.read(payloadSize).flatMap {
-        case Some(chunk) => Monad[F].pure(chunk)
-        case None => ev.raiseError(new Exception("Failed to read payload"))
-      }
-      initialPacket <- InitialPacket.decoder.decode(payload.toBitVector).fold(
-        err => ev.raiseError[InitialPacket](new Exception(s"Failed to decode initial packet: $err ${payload.toBitVector.toHex}")),
-        result => Monad[F].pure(result.value)
-      )
+                   case Some(chunk) => Monad[F].pure(chunk)
+                   case None        => ev.raiseError(new Exception("Failed to read payload"))
+                 }
+      initialPacket <- InitialPacket.decoder
+                         .decode(payload.toBitVector)
+                         .fold(
+                           err =>
+                             ev.raiseError[InitialPacket](
+                               new Exception(s"Failed to decode initial packet: $err ${ payload.toBitVector.toHex }")
+                             ),
+                           result => Monad[F].pure(result.value)
+                         )
     yield initialPacket
 
   /**
@@ -69,11 +74,11 @@ object BitVectorSocket:
    * @group Constructors
    */
   def fromSocket[F[_]](
-    socket: Socket[F],
-    initPacket: InitialPacket,
+    socket:      Socket[F],
+    initPacket:  InitialPacket,
     readTimeout: Duration,
-    carryRef: Ref[F, Chunk[Byte]],
-    useSSL: Boolean
+    carryRef:    Ref[F, Chunk[Byte]],
+    useSSL:      Boolean
   )(using F: Temporal[F]): BitVectorSocket[F] =
     new BitVectorSocket[F]:
 
@@ -82,14 +87,14 @@ object BitVectorSocket:
       override def initialPacket: InitialPacket = initPacket
 
       private val withTimeout: F[Option[Chunk[Byte]]] => F[Option[Chunk[Byte]]] = readTimeout match
-        case _: Duration.Infinite => identity
+        case _: Duration.Infinite   => identity
         case finite: FiniteDuration => _.timeout(finite)
 
       private def readUntilN(nBytes: Int, carry: Chunk[Byte]): F[BitVector] =
         if carry.size < nBytes then
           withTimeout(socket.read(8192)).flatMap {
             case Some(bytes) => readUntilN(nBytes, carry ++ bytes)
-            case None => F.raiseError(EofException(nBytes, carry.size))
+            case None        => F.raiseError(EofException(nBytes, carry.size))
           }
         else
           val (output, remainder) = carry.splitAt(nBytes)
@@ -99,8 +104,8 @@ object BitVectorSocket:
         val payloadSize = bits.toByteArray.length
         val header = Chunk(
           payloadSize.toByte,
-          ((payloadSize >> 8) & 0xFF).toByte,
-          ((payloadSize >> 16) & 0xFF).toByte,
+          ((payloadSize >> 8) & 0xff).toByte,
+          ((payloadSize >> 16) & 0xff).toByte,
           sequenceId
         )
         sequenceId = ((sequenceId + 1) % 256).toByte
@@ -116,8 +121,8 @@ object BitVectorSocket:
     readTimeout: Duration
   ): Resource[F, BitVectorSocket[F]] =
     for
-      socket <- socket
+      socket        <- socket
       initialPacket <- Resource.eval(readInitialPacket(socket))
-      socket$ <- sslOptions.fold(socket.pure[Resource[F, *]])(SSLNegotiation.negotiateSSL(socket, _))
-      carryRef <- Resource.eval(Ref[F].of(Chunk.empty[Byte]))
+      socket$       <- sslOptions.fold(socket.pure[Resource[F, *]])(SSLNegotiation.negotiateSSL(socket, _))
+      carryRef      <- Resource.eval(Ref[F].of(Chunk.empty[Byte]))
     yield fromSocket(socket$, initialPacket, readTimeout, carryRef, sslOptions.isDefined)

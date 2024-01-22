@@ -35,7 +35,7 @@ final case class Recycler[F[_], A](run: A => F[Boolean]) extends (A => F[Boolean
   def andAlso(other: Recycler[F, A])(using Monad[F]): Recycler[F, A] =
     Recycler { a =>
       run(a).flatMap {
-        case true => other(a)
+        case true  => other(a)
         case false => false.pure[F]
       }
     }
@@ -43,7 +43,7 @@ final case class Recycler[F[_], A](run: A => F[Boolean]) extends (A => F[Boolean
 object Recycler:
 
   /** Recycler forms a monoid with "andAlso" logic, if `F` is a monad. */
-  given monoidRecycle[F[_] : Monad]: MonoidK[Recycler[F, *]] =
+  given monoidRecycle[F[_]: Monad]: MonoidK[Recycler[F, *]] =
     new MonoidK[Recycler[F, *]]:
       def empty[A]: Recycler[F, A] = success[F, A]
 
@@ -55,9 +55,9 @@ object Recycler:
       def contramap[A, B](fa: Recycler[F, A])(f: B => A): Recycler[F, B] = fa.contramap(f)
 
   /** Recycler that always yields `true`. */
-  def success[F[_] : Applicative, A]: Recycler[F, A] =
+  def success[F[_]: Applicative, A]: Recycler[F, A] =
     Recycler(_ => true.pure[F])
 
   /** Recycler that always yields `false`. */
-  def failure[F[_] : Applicative, A]: Recycler[F, A] =
+  def failure[F[_]: Applicative, A]: Recycler[F, A] =
     Recycler(_ => false.pure[F])

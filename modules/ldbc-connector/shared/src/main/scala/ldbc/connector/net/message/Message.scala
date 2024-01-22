@@ -12,4 +12,4 @@ import scodec.bits.BitVector
 trait Message:
 
   protected def encodeBody: Attempt[BitVector]
-  def encode: BitVector
+  def encode:               BitVector
