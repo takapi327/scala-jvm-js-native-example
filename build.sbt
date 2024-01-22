@@ -39,14 +39,15 @@ lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     name := "ldbc-connector",
     description := "MySQL connector for native Scala",
     libraryDependencies ++= Seq(
-      cats,
-      catsEffect,
-      ip4s,
+      "org.typelevel" %%% "cats-core"   % "2.10.0",
+      "org.typelevel" %%% "cats-effect" % "3.5.2",
+      "co.fs2" %%% "fs2-core" % "3.9.4",
+      "co.fs2" %%% "fs2-io" % "3.9.4",
       "org.scodec" %%% "scodec-bits" % "1.1.38",
       "org.scodec" %%% "scodec-core" % "2.2.2",
       "org.scodec" %%% "scodec-cats" % "1.2.0",
       "org.typelevel" %%% "otel4s-core-trace" % "0.4.0"
-    ) ++ fs2
+    )
   )
   .enablePlugins(AutomateHeaderPlugin)
 
@@ -54,6 +55,7 @@ lazy val js = (project in file("apps/js"))
   .settings(name := "scala-js-example")
   .settings(compileSettings)
   .settings(
+    scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.CommonJSModule)
     },
