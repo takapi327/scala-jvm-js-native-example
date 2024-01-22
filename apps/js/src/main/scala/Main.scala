@@ -29,16 +29,3 @@ object Main extends IOApp:
       IO.sleep(5.seconds) *>
         IO.pure(ExitCode.Success)
     }
-
-/*
-import scala.scalajs.js.annotation.*
-
-object Main:
-
-  @JSExportTopLevel(name = "handler", moduleID = "index")
-  def hello(): Unit =
-    println("Hello world!")
-    println(msg)
-
-  def msg = "I was compiled by Scala 3. :)"
- */

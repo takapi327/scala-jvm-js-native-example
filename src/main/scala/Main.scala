@@ -17,7 +17,7 @@ object Main extends IOApp:
   val session: Resource[IO, Session[IO]] =
     Session.single(
       host = "127.0.0.1",
-      port = 3306,
+      port = 13306,
       user = "root",
       password = Some("root"),
       debug = true,
