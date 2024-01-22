@@ -16,8 +16,6 @@ import scodec.interop.cats.*
 
 case class Authenticate(user: String, hashedPassword: Array[Byte], pluginName: String) extends Message:
 
-  override def payloadSize: Int = 4 + 4 + 1 + 23 + user.length + 1 + hashedPassword.length + pluginName.length + 2
-
   override protected def encodeBody: Attempt[BitVector] = Authenticate.encoder.encode(this)
 
   override def encode: BitVector =

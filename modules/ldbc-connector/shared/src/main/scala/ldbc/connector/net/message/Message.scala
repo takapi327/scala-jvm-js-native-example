@@ -11,7 +11,5 @@ import scodec.bits.BitVector
 
 trait Message:
 
-  def payloadSize: Int = 0
-
   protected def encodeBody: Attempt[BitVector]
   def encode: BitVector
