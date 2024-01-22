@@ -9,5 +9,3 @@ package ldbc.connector.authenticator
 case class CachingSha2PasswordPlugin(password: Option[String], publicKeyString: Option[String]) extends Sha256PasswordPlugin:
 
   override def name: String = "caching_sha2_password"
-
-  override def encryptPassword: Array[Byte] = encryptPassword("RSA/ECB/PKCS1Padding")

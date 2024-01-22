@@ -7,7 +7,7 @@
 package ldbc.connector.authenticator
 
 import scala.scalajs.js
-import scala.scalajs.js.typedarray.{ ArrayBuffer, Uint8Array }
+import scala.scalajs.js.typedarray._
 
 class MysqlNativePasswordPlugin extends AuthenticationPlugin:
 
@@ -29,12 +29,12 @@ class MysqlNativePasswordPlugin extends AuthenticationPlugin:
     val buffer = new ArrayBuffer(data.length)
     val uint8Array = new Uint8Array(buffer)
     for (i <- data.indices) {
-      uint8Array(i) = data(i)
+      uint8Array(i) = (data(i) & 0xff).toByte // Ensure that the byte is treated as unsigned
     }
     hash.update(uint8Array)
-    val digest = hash.digest()
-    val result = new Array[Byte](digest.length.asInstanceOf[Int])
+    val digest = hash.digest("hex")
+    val result = new Array[Byte](digest.length.asInstanceOf[Int] / 2)
     for (i <- result.indices) {
-      result(i) = digest(i).asInstanceOf[Byte]
+      result(i) = Integer.parseInt(digest.substring(2 * i, 2 * i + 2).asInstanceOf[String], 16).toByte
     }
     result
