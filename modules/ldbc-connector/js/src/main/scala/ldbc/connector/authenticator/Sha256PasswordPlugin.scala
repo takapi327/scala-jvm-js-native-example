@@ -7,7 +7,9 @@
 package ldbc.connector.authenticator
 
 import scala.scalajs.js
-import scala.scalajs.js.typedarray.{ ArrayBuffer, Uint8Array }
+import scala.scalajs.js.typedarray.Uint8Array
+
+import scodec.bits.ByteVector
 
 trait Sha256PasswordPlugin extends AuthenticationPlugin:
 
@@ -29,18 +31,8 @@ trait Sha256PasswordPlugin extends AuthenticationPlugin:
 
   private def sha256(data: Array[Byte]): Array[Byte] =
     val hash = crypto.createHash("sha256")
-    val buffer = new ArrayBuffer(data.length)
-    val uint8Array = new Uint8Array(buffer)
-    for (i <- data.indices) {
-      uint8Array(i) = data(i)
-    }
-    hash.update(uint8Array)
-    val digest = hash.digest()
-    val result = new Array[Byte](digest.length.asInstanceOf[Int])
-    for (i <- result.indices) {
-      result(i) = digest(i).asInstanceOf[Byte]
-    }
-    result
+    hash.update(ByteVector(data).toUint8Array)
+    ByteVector.view(hash.digest().asInstanceOf[Uint8Array]).toArray
 
 object Sha256PasswordPlugin:
 
