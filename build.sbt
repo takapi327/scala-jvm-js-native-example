@@ -12,6 +12,9 @@ ThisBuild / developers := List(
 
 ThisBuild / scalaVersion := "3.3.1"
 
+ThisBuild / githubWorkflowPublish := Seq.empty
+ThisBuild / githubWorkflowPublishPreamble := Seq.empty
+ThisBuild / githubWorkflowPublishPostamble := Seq.empty
 ThisBuild / githubWorkflowJavaVersions := Seq(
   JavaSpec.temurin("11"),
   JavaSpec.temurin("17"),
