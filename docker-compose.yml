@@ -5,9 +5,14 @@ services:
     container_name: scala-jvm-js-native-example
     platform: linux/amd64 # Setting for M1 mac
     environment:
-      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: 'takapi327'
+      MYSQL_PASSWORD: 'takapi327'
     ports:
-      - 3306:3306
+      - 13306:3306
+    volumes:
+      - ./database/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./database:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
