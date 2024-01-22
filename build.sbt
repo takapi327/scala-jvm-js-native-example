@@ -1,4 +1,3 @@
-import Dependencies.*
 import BuildSettings.*
 
 ThisBuild / tlBaseVersion := "1.0"
@@ -69,7 +68,12 @@ lazy val js = (project in file("apps/js"))
   .dependsOn(connector.js)
   .enablePlugins(ScalaJSPlugin)
 
+lazy val native = (project in file("apps/native"))
+  .settings(name := "scala-native-example")
+  .settings(compileSettings)
+  .enablePlugins(ScalaNativePlugin)
+
 lazy val root = (project in file("."))
   .settings(name := "scala-jvm-js-native-example")
   .settings(compileSettings)
-  .aggregate(jvm, js, connector.jvm, connector.js)
+  .aggregate(jvm, js, native, connector.jvm, connector.js)
