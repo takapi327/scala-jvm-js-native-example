@@ -9,7 +9,7 @@ object Dependencies {
   val fs2 = Seq(
     "fs2-core",
     "fs2-io"
-  ).map("co.fs2" %% _ % "3.9.3")
+  ).map("co.fs2" %% _ % "3.9.4")
 
   val ip4s = "com.comcast" %% "ip4s-core" % "3.2.0"
 }
