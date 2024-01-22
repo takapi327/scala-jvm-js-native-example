@@ -6,12 +6,11 @@
 
 package ldbc.connector.authenticator
 
-import java.util.Base64
-import java.security.{MessageDigest, PublicKey, KeyFactory}
+import java.nio.charset.StandardCharsets
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.X509EncodedKeySpec
-import java.nio.charset.StandardCharsets
-
+import java.security.{KeyFactory, MessageDigest, PublicKey}
+import java.util.Base64
 import javax.crypto.Cipher
 
 trait Sha256PasswordPlugin extends AuthenticationPlugin:
