@@ -39,9 +39,9 @@ lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
     description := "MySQL connector for native Scala",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-core"   % "2.10.0",
-      "org.typelevel" %%% "cats-effect" % "3.5.2",
-      "co.fs2" %%% "fs2-core" % "3.9.4",
-      "co.fs2" %%% "fs2-io" % "3.9.4",
+      "org.typelevel" %%% "cats-effect" % "3.5.3",
+      "co.fs2" %%% "fs2-core" % "3.10-365636d",
+      "co.fs2" %%% "fs2-io" % "3.10-365636d",
       "org.scodec" %%% "scodec-bits" % "1.1.38",
       "org.scodec" %%% "scodec-core" % "2.2.2",
       "org.scodec" %%% "scodec-cats" % "1.2.0",
@@ -71,9 +71,13 @@ lazy val js = (project in file("apps/js"))
 lazy val native = (project in file("apps/native"))
   .settings(name := "scala-native-example")
   .settings(compileSettings)
+  //.settings(libraryDependencies ++= Seq(
+  //  "com.armanbilge" %%% "epollcat" % "0.1.4"
+  //))
+  .dependsOn(connector.native)
   .enablePlugins(ScalaNativePlugin)
 
 lazy val root = (project in file("."))
   .settings(name := "scala-jvm-js-native-example")
   .settings(compileSettings)
-  .aggregate(jvm, js, native, connector.jvm, connector.js)
+  .aggregate(jvm, js, native, connector.jvm, connector.js, connector.native)
