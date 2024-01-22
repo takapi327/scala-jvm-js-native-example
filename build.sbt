@@ -7,17 +7,17 @@ ThisBuild / organizationName := "takapi327"
 ThisBuild / startYear        := Some(2024)
 ThisBuild / licenses         := Seq(License.MIT)
 ThisBuild / developers := List(
-  tlGitHubDev("takapi327", "takahiko tominaga"),
+  tlGitHubDev("takapi327", "takahiko tominaga")
 )
 
 ThisBuild / scalaVersion := "3.3.1"
 
-ThisBuild / githubWorkflowPublish := Seq.empty
-ThisBuild / githubWorkflowPublishPreamble := Seq.empty
+ThisBuild / githubWorkflowPublish          := Seq.empty
+ThisBuild / githubWorkflowPublishPreamble  := Seq.empty
 ThisBuild / githubWorkflowPublishPostamble := Seq.empty
 ThisBuild / githubWorkflowJavaVersions := Seq(
   JavaSpec.temurin("11"),
-  JavaSpec.temurin("17"),
+  JavaSpec.temurin("17")
 )
 
 lazy val compileSettings = Seq(
@@ -25,12 +25,14 @@ lazy val compileSettings = Seq(
 
   // Headers
   headerMappings := headerMappings.value + (HeaderFileType.scala -> customCommentStyle),
-  headerLicense  := Some(HeaderLicense.Custom(
-    """|Copyright (c) 2023-2024 by Takahiko Tominaga
+  headerLicense := Some(
+    HeaderLicense.Custom(
+      """|Copyright (c) 2023-2024 by Takahiko Tominaga
        |This software is licensed under the MIT License (MIT).
        |For more information see LICENSE or https://opensource.org/licenses/MIT
        |""".stripMargin
-  )),
+    )
+  )
 )
 
 lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
@@ -38,16 +40,16 @@ lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .in(file("modules/ldbc-connector"))
   .settings(compileSettings)
   .settings(
-    name := "ldbc-connector",
+    name        := "ldbc-connector",
     description := "MySQL connector for native Scala",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-core"   % "2.10.0",
-      "org.typelevel" %%% "cats-effect" % "3.5.3",
-      "co.fs2" %%% "fs2-core" % "3.10-365636d",
-      "co.fs2" %%% "fs2-io" % "3.10-365636d",
-      "org.scodec" %%% "scodec-bits" % "1.1.38",
-      "org.scodec" %%% "scodec-core" % "2.2.2",
-      "org.scodec" %%% "scodec-cats" % "1.2.0",
+      "org.typelevel" %%% "cats-core"         % "2.10.0",
+      "org.typelevel" %%% "cats-effect"       % "3.5.3",
+      "co.fs2"        %%% "fs2-core"          % "3.10-365636d",
+      "co.fs2"        %%% "fs2-io"            % "3.10-365636d",
+      "org.scodec"    %%% "scodec-bits"       % "1.1.38",
+      "org.scodec"    %%% "scodec-core"       % "2.2.2",
+      "org.scodec"    %%% "scodec-cats"       % "1.2.0",
       "org.typelevel" %%% "otel4s-core-trace" % "0.4.0"
     )
   )
@@ -66,7 +68,7 @@ lazy val js = (project in file("apps/js"))
     scalaJSUseMainModuleInitializer := true,
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.CommonJSModule)
-    },
+    }
   )
   .dependsOn(connector.js)
   .enablePlugins(ScalaJSPlugin)
@@ -74,9 +76,9 @@ lazy val js = (project in file("apps/js"))
 lazy val native = (project in file("apps/native"))
   .settings(name := "scala-native-example")
   .settings(compileSettings)
-  //.settings(libraryDependencies ++= Seq(
+  // .settings(libraryDependencies ++= Seq(
   //  "com.armanbilge" %%% "epollcat" % "0.1.4"
-  //))
+  // ))
   .dependsOn(connector.native)
   .enablePlugins(ScalaNativePlugin)
 
