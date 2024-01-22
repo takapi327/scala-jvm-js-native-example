@@ -1,0 +1,14 @@
+version: '3'
+services:
+  mysql:
+    image: mysql:8.2.0
+    container_name: scala-jvm-js-native-example
+    platform: linux/amd64 # Setting for M1 mac
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+    ports:
+      - 13306:3306
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
