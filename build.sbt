@@ -51,6 +51,12 @@ lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
   .enablePlugins(AutomateHeaderPlugin)
 
+lazy val jvm = (project in file("apps/jvm"))
+  .settings(name := "scala-jvm-example")
+  .settings(compileSettings)
+  .settings(run / fork := true)
+  .dependsOn(connector.jvm)
+
 lazy val js = (project in file("apps/js"))
   .settings(name := "scala-js-example")
   .settings(compileSettings)
@@ -66,8 +72,4 @@ lazy val js = (project in file("apps/js"))
 lazy val root = (project in file("."))
   .settings(name := "scala-jvm-js-native-example")
   .settings(compileSettings)
-  .settings(libraryDependencies ++= Seq(
-    "org.tpolecat" % "natchez-core_3" % "0.3.5"
-  ))
-  .settings(run / fork := true)
-  .dependsOn(connector.jvm)
+  .aggregate(jvm, js, connector.jvm, connector.js)
