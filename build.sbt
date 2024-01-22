@@ -50,6 +50,17 @@ lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   )
   .enablePlugins(AutomateHeaderPlugin)
 
+lazy val js = (project in file("apps/js"))
+  .settings(name := "scala-js-example")
+  .settings(compileSettings)
+  .settings(
+    scalaJSLinkerConfig ~= {
+      _.withModuleKind(ModuleKind.CommonJSModule)
+    },
+  )
+  .dependsOn(connector.js)
+  .enablePlugins(ScalaJSPlugin)
+
 lazy val root = (project in file("."))
   .settings(name := "scala-jvm-js-native-example")
   .settings(compileSettings)
