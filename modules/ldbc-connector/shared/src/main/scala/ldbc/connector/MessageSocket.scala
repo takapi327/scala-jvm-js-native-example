@@ -46,8 +46,8 @@ trait MessageSocket[F[_]]:
 object MessageSocket:
 
   def fromBitVectorSocket[F[_]: Concurrent: Console](
-    bvs:          BitVectorSocket[F],
-    debugEnabled: Boolean,
+    bvs:           BitVectorSocket[F],
+    debugEnabled:  Boolean,
     sequenceIdRef: Ref[F, Byte]
   ): F[MessageSocket[F]] =
     Queue.circularBuffer[F, Either[Any, Any]](10).map { cb =>
@@ -71,7 +71,7 @@ object MessageSocket:
             payloadSize = parseHeader(header.toByteArray)
             payload <- bvs.read(payloadSize)
             response = ResponsePacket(header, payload)
-            _    <- sequenceIdRef.update(_ => ((response.sequenceId + 1) % 256).toByte)
+            _ <- sequenceIdRef.update(_ => ((response.sequenceId + 1) % 256).toByte)
           yield response).onError {
             case t => debug(s" ← ${ AnsiColor.RED }${ t.getMessage }${ AnsiColor.RESET }")
           }
@@ -85,7 +85,7 @@ object MessageSocket:
 
         private def buildMessage(message: Message): F[BitVector] =
           sequenceIdRef.get.map(sequenceId =>
-            val bits = message.encode
+            val bits        = message.encode
             val payloadSize = bits.toByteArray.length
             val header = Chunk(
               payloadSize.toByte,
@@ -123,7 +123,7 @@ object MessageSocket:
     readTimeout: Duration
   ): Resource[F, MessageSocket[F]] =
     for
-      bvs <- BitVectorSocket[F](sockets, sslOptions, readTimeout)
+      bvs           <- BitVectorSocket[F](sockets, sslOptions, readTimeout)
       sequenceIdRef <- Resource.eval(Ref[F].of((if sslOptions.isDefined then 2 else 1).toByte))
-      ms  <- Resource.eval(fromBitVectorSocket(bvs, debug, sequenceIdRef))
+      ms            <- Resource.eval(fromBitVectorSocket(bvs, debug, sequenceIdRef))
     yield ms
