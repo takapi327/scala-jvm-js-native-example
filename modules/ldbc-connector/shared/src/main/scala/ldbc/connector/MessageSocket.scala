@@ -56,38 +56,25 @@ object MessageSocket:
         override def initialPacket: InitialPacket = bvs.initialPacket
 
         private def debug(msg: => String): F[Unit] =
-          if debugEnabled then Console[F].println(msg) else Concurrent[F].unit
+          sequenceIdRef.get
+            .flatMap(id => if debugEnabled then Console[F].println(s"[$id] $msg") else Concurrent[F].unit)
 
         private def parseHeader(headerBytes: Array[Byte]): Int =
           (headerBytes(0) & 0xff) | ((headerBytes(1) & 0xff) << 8) | ((headerBytes(2) & 0xff) << 16)
 
-        /**
-         * Messages are prefixed with a 5-byte header consisting of a tag (byte) and a length (int32,
-         * total including self but not including the tag) in network order.
-         */
-        val receiveImpl: F[Packet] =
-          (for
+        override def receive: F[Packet] =
+          for
             header <- bvs.read(4)
             payloadSize = parseHeader(header.toByteArray)
             payload <- bvs.read(payloadSize)
             response = ResponsePacket(header, payload)
-            _ <- sequenceIdRef.update(_ => ((response.sequenceId + 1) % 256).toByte)
-          yield response).onError {
-            case t =>
-              debug(
-                s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.RED }${ t.getMessage }${ AnsiColor.RESET }"
-              )
-          }
-
-        override def receive: F[Packet] =
-          for
-            msg <- receiveImpl
-            _   <- cb.offer(Right(msg))
+            _ <- cb.offer(Right(response))
             _ <-
               debug(
-                s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.GREEN }$msg${ AnsiColor.RESET }"
+                s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.GREEN }$response${ AnsiColor.RESET }"
               )
-          yield msg
+            _ <- sequenceIdRef.update(_ => ((response.sequenceId + 1) % 256).toByte)
+          yield response
 
         private def buildMessage(message: Message): F[BitVector] =
           sequenceIdRef.get.map(sequenceId =>
