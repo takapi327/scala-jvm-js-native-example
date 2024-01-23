@@ -77,12 +77,9 @@ object BitVectorSocket:
     socket:      Socket[F],
     initPacket:  InitialPacket,
     readTimeout: Duration,
-    carryRef:    Ref[F, Chunk[Byte]],
-    useSSL:      Boolean
+    carryRef:    Ref[F, Chunk[Byte]]
   )(using F: Temporal[F]): BitVectorSocket[F] =
     new BitVectorSocket[F]:
-
-      private var sequenceId: Byte = if useSSL then 2 else 1
 
       override def initialPacket: InitialPacket = initPacket
 
@@ -101,15 +98,7 @@ object BitVectorSocket:
           carryRef.set(remainder).as(output.toBitVector)
 
       override def write(bits: BitVector): F[Unit] =
-        val payloadSize = bits.toByteArray.length
-        val header = Chunk(
-          payloadSize.toByte,
-          ((payloadSize >> 8) & 0xff).toByte,
-          ((payloadSize >> 16) & 0xff).toByte,
-          sequenceId
-        )
-        sequenceId = ((sequenceId + 1) % 256).toByte
-        socket.write(header ++ Chunk.byteVector(bits.bytes))
+        socket.write(Chunk.byteVector(bits.bytes))
 
       override def read(nBytes: Int): F[BitVector] =
         // nb: unsafe for concurrent reads but protected by protocol mutex
@@ -125,4 +114,4 @@ object BitVectorSocket:
       initialPacket <- Resource.eval(readInitialPacket(socket))
       socket$       <- sslOptions.fold(socket.pure[Resource[F, *]])(SSLNegotiation.negotiateSSL(socket, _))
       carryRef      <- Resource.eval(Ref[F].of(Chunk.empty[Byte]))
-    yield fromSocket(socket$, initialPacket, readTimeout, carryRef, sslOptions.isDefined)
+    yield fromSocket(socket$, initialPacket, readTimeout, carryRef)

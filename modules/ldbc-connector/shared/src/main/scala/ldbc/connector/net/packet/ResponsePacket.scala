@@ -17,6 +17,8 @@ case class ResponsePacket(
 ) extends Packet:
 
   private val payloadBytes: Chunk[Byte] = Chunk.array(payload.toByteArray)
+  
+  def sequenceId: Byte = header.toByteArray(3)
 
   def isErrorPacket: Boolean = (payloadBytes(0) & 0xff) == ResponsePacket.TYPE_ID_ERROR
 

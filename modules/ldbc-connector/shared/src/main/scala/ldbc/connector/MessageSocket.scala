@@ -15,7 +15,10 @@ import cats.syntax.all.*
 import cats.effect.*
 import cats.effect.std.*
 
+import fs2.Chunk
 import fs2.io.net.Socket
+
+import scodec.bits.BitVector
 
 import ldbc.connector.net.{ SSLNegotiation, BitVectorSocket }
 import ldbc.connector.net.message.Message
@@ -44,7 +47,8 @@ object MessageSocket:
 
   def fromBitVectorSocket[F[_]: Concurrent: Console](
     bvs:          BitVectorSocket[F],
-    debugEnabled: Boolean
+    debugEnabled: Boolean,
+    sequenceIdRef: Ref[F, Byte]
   ): F[MessageSocket[F]] =
     Queue.circularBuffer[F, Either[Any, Any]](10).map { cb =>
       new MessageSocket[F]:
@@ -66,7 +70,9 @@ object MessageSocket:
             header <- bvs.read(4)
             payloadSize = parseHeader(header.toByteArray)
             payload <- bvs.read(payloadSize)
-          yield ResponsePacket(header, payload)).onError {
+            response = ResponsePacket(header, payload)
+            _    <- sequenceIdRef.update(_ => ((response.sequenceId + 1) % 256).toByte)
+          yield response).onError {
             case t => debug(s" ← ${ AnsiColor.RED }${ t.getMessage }${ AnsiColor.RESET }")
           }
 
@@ -77,10 +83,27 @@ object MessageSocket:
             _   <- debug(s" ← ${ AnsiColor.GREEN }$msg${ AnsiColor.RESET }")
           yield msg
 
+        private def buildMessage(message: Message): F[BitVector] =
+          sequenceIdRef.get.map(sequenceId =>
+            val bits = message.encode
+            val payloadSize = bits.toByteArray.length
+            val header = Chunk(
+              payloadSize.toByte,
+              ((payloadSize >> 8) & 0xff).toByte,
+              ((payloadSize >> 16) & 0xff).toByte,
+              sequenceId
+            )
+            header.toBitVector ++ bits
+          )
+
         override def send(message: Message): F[Unit] =
-          debug(s" → ${ AnsiColor.YELLOW }$message${ AnsiColor.RESET }") *>
-            bvs.write(message.encode) *>
-            cb.offer(Left(message))
+          for
+            bits <- buildMessage(message)
+            _    <- debug(s" → ${ AnsiColor.YELLOW }$message${ AnsiColor.RESET }")
+            _    <- bvs.write(bits)
+            _    <- sequenceIdRef.update(sequenceId => ((sequenceId + 1) % 256).toByte)
+            _    <- cb.offer(Left(message))
+          yield ()
 
         override def history(max: Int): F[List[Either[Any, Any]]] =
           cb.take.flatMap { first =>
@@ -101,5 +124,6 @@ object MessageSocket:
   ): Resource[F, MessageSocket[F]] =
     for
       bvs <- BitVectorSocket[F](sockets, sslOptions, readTimeout)
-      ms  <- Resource.eval(fromBitVectorSocket(bvs, debug))
+      sequenceIdRef <- Resource.eval(Ref[F].of((if sslOptions.isDefined then 2 else 1).toByte))
+      ms  <- Resource.eval(fromBitVectorSocket(bvs, debug, sequenceIdRef))
     yield ms
