@@ -73,14 +73,20 @@ object MessageSocket:
             response = ResponsePacket(header, payload)
             _ <- sequenceIdRef.update(_ => ((response.sequenceId + 1) % 256).toByte)
           yield response).onError {
-            case t => debug(s"Client ← Server: ${ AnsiColor.RED }${ t.getMessage }${ AnsiColor.RESET }")
+            case t =>
+              debug(
+                s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.RED }${ t.getMessage }${ AnsiColor.RESET }"
+              )
           }
 
         override def receive: F[Packet] =
           for
             msg <- receiveImpl
             _   <- cb.offer(Right(msg))
-            _   <- debug(s"Client ← Server: ${ AnsiColor.GREEN }$msg${ AnsiColor.RESET }")
+            _ <-
+              debug(
+                s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.GREEN }$msg${ AnsiColor.RESET }"
+              )
           yield msg
 
         private def buildMessage(message: Message): F[BitVector] =
@@ -99,10 +105,13 @@ object MessageSocket:
         override def send(message: Message): F[Unit] =
           for
             bits <- buildMessage(message)
-            _    <- debug(s"Client → Server: ${ AnsiColor.YELLOW }$message${ AnsiColor.RESET }")
-            _    <- bvs.write(bits)
-            _    <- sequenceIdRef.update(sequenceId => ((sequenceId + 1) % 256).toByte)
-            _    <- cb.offer(Left(message))
+            _ <-
+              debug(
+                s"Client ${ AnsiColor.BLUE }→${ AnsiColor.RESET } Server: ${ AnsiColor.YELLOW }$message${ AnsiColor.RESET }"
+              )
+            _ <- bvs.write(bits)
+            _ <- sequenceIdRef.update(sequenceId => ((sequenceId + 1) % 256).toByte)
+            _ <- cb.offer(Left(message))
           yield ()
 
         override def history(max: Int): F[List[Either[Any, Any]]] =
