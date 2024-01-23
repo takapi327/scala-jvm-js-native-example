@@ -34,6 +34,15 @@ case class ResponsePacket(
 
   def to[M](decoder: Decoder[M]): M = decoder.decode(payload).require.value
 
+  override def toString: String =
+    if isEOFPacket then "ERROR Packet"
+    else if isEOFPacket then "EOF Packet"
+    else if isAuthMethodSwitchRequestPacket then "Auth Method Switch Request Packet"
+    else if isOKPacket then "OK Packet"
+    else if isAuthMoreDataPacket then "Auth More Data Packet"
+    else if isAuthNextFactorPacket then "Auth Next Factor Packet"
+    else "Unknown Packet"
+
 object ResponsePacket:
   val TYPE_ID_ERROR:            Int = 0xff
   val TYPE_ID_EOF:              Int = 0xfe

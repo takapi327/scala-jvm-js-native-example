@@ -21,7 +21,7 @@ case class Authenticate(user: String, hashedPassword: Array[Byte], pluginName: S
   override def encode: BitVector =
     encodeBody.require
 
-  override def toString: String = "Authenticate"
+  override def toString: String = "Authenticate Request"
 
 object Authenticate:
 
