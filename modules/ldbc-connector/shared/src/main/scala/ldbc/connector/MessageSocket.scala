@@ -63,7 +63,7 @@ object MessageSocket:
           (headerBytes(0) & 0xff) | ((headerBytes(1) & 0xff) << 8) | ((headerBytes(2) & 0xff) << 16)
 
         override def receive: F[Packet] =
-          for
+          (for
             header <- bvs.read(4)
             payloadSize = parseHeader(header.toByteArray)
             payload <- bvs.read(payloadSize)
@@ -74,7 +74,12 @@ object MessageSocket:
                 s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.GREEN }$response${ AnsiColor.RESET }"
               )
             _ <- sequenceIdRef.update(_ => ((response.sequenceId + 1) % 256).toByte)
-          yield response
+          yield response).onError {
+            case t =>
+              debug(
+                s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.RED }${ t.getMessage }${ AnsiColor.RESET }"
+              )
+          }
 
         private def buildMessage(message: Message): F[BitVector] =
           sequenceIdRef.get.map(sequenceId =>
