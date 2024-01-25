@@ -11,6 +11,60 @@ import scodec.codecs.*
 
 import cats.syntax.all.*
 
+/**
+ *
+ * @param catalog
+ *   Type: string<lenenc>
+ *   Name: catalog
+ *   Description: The catalog used. Currently always "def"
+ * @param schema
+ *   Type: string<lenenc>
+ *   Name: schema
+ *   Description: schema name
+ * @param table
+ *   Type: string<lenenc>
+ *   Name: table
+ *   Description: virtual table name
+ * @param orgTable
+ *   Type: string<lenenc>
+ *   Name: org_table
+ *   Description: physical table name
+ * @param name
+ *   Type: string<lenenc>
+ *   Name: name
+ *   Description: virtual column name
+ * @param orgName
+ *   Type: string<lenenc>
+ *   Name: org_name
+ *   Description: physical column name
+ * @param length
+ *   Type: int<lenenc>
+ *   Name: length of fixed length fields
+ *   Description: 0x0c
+ * @param characterSet
+ *   Type: int<2>
+ *   Name: character_set
+ *   Description: the column character set as defined in Character Set
+ * @param columnLength
+ *   Type: int<4>
+ *   Name: column_length
+ *   Description: maximum length of the field
+ * @param columnType
+ *   Type: int<1>
+ *   Name: type
+ *   Description: type of the column as defined in enum_field_types
+ * @param flags
+ *   Type: int<2>
+ *   Name: flags
+ *   Description: Flags as defined in Column Definition Flags
+ * @param decimals
+ *   Type: int<1>
+ *   Name: decimals
+ *   Description: max shown decimal digits
+ *     - 0x00 for integers and static strings
+ *     - 0x1f for dynamic strings, double, float
+ *     - 0x00 to 0x51 for decimals
+ */
 case class ColumnDefinitionPacket(
   catalog: String,
   schema: Option[String],
@@ -21,14 +75,14 @@ case class ColumnDefinitionPacket(
   length: Int,
   characterSet: Int,
   columnLength: Long,
-  `type`: Int,
+  columnType: Int,
   flags: Int,
   decimals: Int,
 ) extends Packet:
 
   override def toString: String = "Protocol::ColumnDefinition41"
 
-  def info: String = schema.getOrElse("") + table.fold("")("." + _) + name.fold("")("." + _) + " " + `type`
+  def info: String = schema.getOrElse("") + table.fold("")("." + _) + name.fold("")("." + _) + " " + columnType
 
 object ColumnDefinitionPacket:
 
@@ -62,7 +116,7 @@ object ColumnDefinitionPacket:
       length = length,
       characterSet = characterSet,
       columnLength = columnLength,
-      `type` = columnType & 0xff,
+      columnType = columnType,
       flags = flags,
       decimals = decimals
     )
