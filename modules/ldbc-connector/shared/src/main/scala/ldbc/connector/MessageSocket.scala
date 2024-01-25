@@ -18,6 +18,7 @@ import cats.effect.std.*
 import fs2.Chunk
 import fs2.io.net.Socket
 
+import scodec.Decoder
 import scodec.bits.BitVector
 
 import ldbc.connector.net.{ SSLNegotiation, BitVectorSocket }
@@ -35,7 +36,7 @@ trait MessageSocket[F[_]]:
    * Receive the next `BackendMessage`, or raise an exception if EOF is reached before a complete
    * message arrives.
    */
-  def receive: F[Packet]
+  def receive[P <: Packet](decoder: Decoder[P]): F[P]
 
   /** Send the specified message. */
   def send(message: Message): F[Unit]
@@ -64,18 +65,18 @@ object MessageSocket:
         private def parseHeader(headerBytes: Array[Byte]): Int =
           (headerBytes(0) & 0xff) | ((headerBytes(1) & 0xff) << 8) | ((headerBytes(2) & 0xff) << 16)
 
-        override def receive: F[Packet] =
+        override def receive[P <: Packet](decoder: Decoder[P]): F[P] =
           (for
             header <- bvs.read(4)
             payloadSize = parseHeader(header.toByteArray)
             payload <- bvs.read(payloadSize)
-            response = ResponsePacket(header, payload)
+            response = decoder.decodeValue(payload).require
             _ <- cb.offer(Right(response))
             _ <-
               debug(
                 s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.GREEN }$response${ AnsiColor.RESET }"
               )
-            _ <- sequenceIdRef.update(_ => ((response.sequenceId + 1) % 256).toByte)
+            _ <- sequenceIdRef.update(_ => (( header.toByteArray(3) + 1) % 256).toByte)
           yield response).onError {
             case t =>
               debug(
