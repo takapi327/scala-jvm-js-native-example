@@ -18,6 +18,8 @@ import cats.effect.std.Console
 
 import fs2.io.net.Socket
 
+import scodec.Decoder
+
 import ldbc.connector.net.SSLNegotiation
 import ldbc.connector.net.message.Message
 import ldbc.connector.net.packet.*
@@ -90,11 +92,11 @@ object BufferedMessageSocket:
       override def initialPacket: InitialPacket = ms.initialPacket
 
       // n.b. there is a race condition here, prevented by the protocol semaphore
-      override def receive: F[Packet] =
+      override def receive[P <: Packet](decoder: Decoder[P]): F[P] =
         term.get.flatMap {
           case Some(t) => Concurrent[F].raiseError(t)
           case None =>
-            ms.receive
+            ms.receive(decoder)
             //queue.take.flatMap {
             //  case e: NetworkError => term.set(Some(e.cause)) *> receive
             //  case m               => m.pure[F]

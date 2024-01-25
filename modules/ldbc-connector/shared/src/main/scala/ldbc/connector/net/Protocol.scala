@@ -17,6 +17,8 @@ import cats.effect.std.Console
 
 import fs2.io.net.Socket
 
+import scodec.Decoder
+
 import ldbc.connector.BufferedMessageSocket
 import ldbc.connector.net.protocol.Exchange
 import ldbc.connector.net.message.*
@@ -69,19 +71,26 @@ object Protocol:
 
           val authentication = Authenticate(user, Array(hashedPassword.length.toByte) ++ hashedPassword, plugin.name)
 
-          bms.send(authentication) <* bms.receive.flatMap {
-            case res: ResponsePacket if res.isAuthMethodSwitchRequestPacket =>
-              Concurrent[F].raiseError(new Exception("Authentication Method Switch Request"))
-            case res: ResponsePacket if res.isAuthNextFactorPacket =>
-              Concurrent[F].raiseError(new Exception("Authentication Next Factor"))
-            case res: ResponsePacket if res.isAuthMoreDataPacket => bms.receive *> Concurrent[F].unit
-            case res: ResponsePacket if res.isOKPacket           => Concurrent[F].unit
-            case res: ResponsePacket if res.isErrorPacket =>
-              Concurrent[F].raiseError(new Exception("Authentication failed"))
-            case res: ResponsePacket if res.isEOFPacket => Concurrent[F].raiseError(new Exception("EOF Packet"))
-            case _                                      => Concurrent[F].raiseError(new Exception("Unknown packet"))
+          bms.send(authentication) <* bms.receive(AuthenticationPacket.decoder).flatMap {
+            case res: AuthMoreDataPacket => bms.receive(AuthenticationPacket.decoder)
           }
 
+        def repeatProcess[P <: Packet](times: Int, decoder: Decoder[P]): F[List[P]] =
+          def read(remaining: Int, acc: List[P]): F[List[P]] =
+            if remaining <= 0 then Concurrent[F].pure(acc)
+            else bms.receive(decoder).flatMap(result => read(remaining - 1, acc :+ result))
+
+          read(times, List.empty[P])
+
         override def executeQuery(sql: String): F[Unit] =
-          bms.changeCommandPhase *> bms.send(ComQuery(sql))
+          for
+            columnCount <- bms.changeCommandPhase *>
+              bms.send(ComQuery(sql)) *>
+              bms.receive(ColumnsNumberPacket.decoder)
+            columns <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
+            resultSetRow <- bms.receive(ResultSetRowPacket.decoder(columnCount.columnCount))
+          yield
+            println(s"columnCount: ${columnCount.columnCount}")
+            println(columns.map(_.info).mkString(", "))
+            println(resultSetRow.value.mkString(", "))
     }
