@@ -32,6 +32,7 @@ object Main extends IOApp:
 
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
-      IO.sleep(5.seconds) *>
+      session.executeQuery("SELECT * FROM example.category") *>
+        IO.sleep(5.seconds) *>
         IO.pure(ExitCode.Success)
     }
