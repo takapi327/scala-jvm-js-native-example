@@ -26,7 +26,7 @@ import ldbc.connector.util.*
 import ldbc.connector.exception.LdbcException
 
 trait Session[F[_]]:
-  
+
   def executeQuery(sql: String): F[Unit]
 
 object Session:

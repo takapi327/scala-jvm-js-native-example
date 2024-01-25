@@ -85,11 +85,11 @@ object Protocol:
         override def executeQuery(sql: String): F[Unit] =
           for
             columnCount <- bms.changeCommandPhase *>
-              bms.send(ComQuery(sql)) *>
-              bms.receive(ColumnsNumberPacket.decoder)
-            columns <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
+                             bms.send(ComQuery(sql)) *>
+                             bms.receive(ColumnsNumberPacket.decoder)
+            columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
             resultSetRow <- bms.receive(ResultSetRowPacket.decoder(columnCount.columnCount))
           yield
-            println(s"columns: ${columns.map(_.info).mkString(", ")}")
-            println(s"records: ${resultSetRow.value.mkString(", ")}")
+            println(s"columns: ${ columns.map(_.info).mkString(", ") }")
+            println(s"records: ${ resultSetRow.value.mkString(", ") }")
     }

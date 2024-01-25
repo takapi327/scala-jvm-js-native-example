@@ -14,7 +14,7 @@ import scodec.codecs.*
 trait AuthenticationPacket extends Packet
 
 object AuthenticationPacket:
-  
+
   val decoder: Decoder[AuthenticationPacket] =
     int8.flatMap { status =>
       (status: @switch) match

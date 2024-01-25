@@ -46,12 +46,12 @@ import scodec.codecs.*
  *   Description: Session State Information
  */
 case class OKPacket(
-  status: Int,
-  affectedRows: Int,
-  lastInsertId: Int,
-  statusFlags: Int,
-  warnings: Option[Int],
-  info: Int,
+  status:           Int,
+  affectedRows:     Int,
+  lastInsertId:     Int,
+  statusFlags:      Int,
+  warnings:         Option[Int],
+  info:             Int,
   sessionStateInfo: Option[Int]
 ) extends AuthenticationPacket:
 
@@ -63,11 +63,11 @@ object OKPacket:
 
   val decoder: Decoder[OKPacket] =
     for
-      status <- uint4
-      affectedRows <- uint4
-      lastInsertId <- uint4
-      statusFlags <- uint4
-      warnings <- uint4
-      info <- uint4
+      status           <- uint4
+      affectedRows     <- uint4
+      lastInsertId     <- uint4
+      statusFlags      <- uint4
+      warnings         <- uint4
+      info             <- uint4
       sessionStateInfo <- uint4
     yield OKPacket(status, affectedRows, lastInsertId, statusFlags, Some(warnings), info, Some(sessionStateInfo))

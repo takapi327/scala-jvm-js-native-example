@@ -76,7 +76,7 @@ object MessageSocket:
               debug(
                 s"Client ${ AnsiColor.BLUE }←${ AnsiColor.RESET } Server: ${ AnsiColor.GREEN }$response${ AnsiColor.RESET }"
               )
-            _ <- sequenceIdRef.update(_ => (( header.toByteArray(3) + 1) % 256).toByte)
+            _ <- sequenceIdRef.update(_ => ((header.toByteArray(3) + 1) % 256).toByte)
           yield response).onError {
             case t =>
               debug(

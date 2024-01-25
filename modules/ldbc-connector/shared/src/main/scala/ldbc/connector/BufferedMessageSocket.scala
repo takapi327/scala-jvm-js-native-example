@@ -40,7 +40,7 @@ object BufferedMessageSocket:
    * condition, message processing has stopped, and any further attempts to send or receive should
    * result in `cause` being raised.
    */
-  //private case class NetworkError(cause: Throwable) extends Packet
+  // private case class NetworkError(cause: Throwable) extends Packet
 
   def apply[F[_]: Temporal: Console](
     queueSize:   Int,
@@ -59,14 +59,14 @@ object BufferedMessageSocket:
    * with asynchronous messages, and messages that require us to record a bit of information that
    * the user might ask for later.
    */
-  //private def next[F[_]: MonadThrow](
+  // private def next[F[_]: MonadThrow](
   //  ms: MessageSocket[F],
   //  // xaSig: Ref[F, TransactionStatus],
   //  // paSig: Ref[F, Map[String, String]],
   //  // bkDef: Deferred[F, BackendKeyData],
   //  // noTop: Topic[F, Notification[String]],
   //  queue: Queue[F, Packet]
-  //): F[Unit] =
+  // ): F[Unit] =
   //  def step: F[Unit] = ms.receive.flatMap(packet => queue.offer(packet)) >> step
 
   //  step.attempt.flatMap {
@@ -83,10 +83,9 @@ object BufferedMessageSocket:
     ms:        MessageSocket[F],
     queueSize: Int
   ): F[BufferedMessageSocket[F]] =
-    for
-      term  <- Ref[F].of[Option[Throwable]](None)
-      //queue <- Queue.bounded[F, Packet](queueSize)
-      //fib   <- next(ms, queue).start
+    for term <- Ref[F].of[Option[Throwable]](None)
+      // queue <- Queue.bounded[F, Packet](queueSize)
+      // fib   <- next(ms, queue).start
     yield new BufferedMessageSocket[F]:
 
       override def initialPacket: InitialPacket = ms.initialPacket
@@ -97,10 +96,10 @@ object BufferedMessageSocket:
           case Some(t) => Concurrent[F].raiseError(t)
           case None =>
             ms.receive(decoder)
-            //queue.take.flatMap {
-            //  case e: NetworkError => term.set(Some(e.cause)) *> receive
-            //  case m               => m.pure[F]
-            //}
+          // queue.take.flatMap {
+          //  case e: NetworkError => term.set(Some(e.cause)) *> receive
+          //  case m               => m.pure[F]
+          // }
         }
 
       override def send(message: Message): F[Unit] =
@@ -110,9 +109,9 @@ object BufferedMessageSocket:
         }
 
       override protected def terminate: F[Unit] =
-        //fib.cancel *> // stop processing incoming messages
-          Console[F].println("Terminating")
-        //  send(Terminate) // server will close the socket when it sees this
+        // fib.cancel *> // stop processing incoming messages
+        Console[F].println("Terminating")
+      //  send(Terminate) // server will close the socket when it sees this
 
       override def history(max: Int): F[List[Either[Any, Any]]] =
         ms.history(max)

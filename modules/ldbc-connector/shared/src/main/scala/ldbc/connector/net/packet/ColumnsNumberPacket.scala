@@ -16,5 +16,5 @@ case class ColumnsNumberPacket(
   override def toString: String = "ColumnsNumber Packet"
 
 object ColumnsNumberPacket:
-  
+
   val decoder: Decoder[ColumnsNumberPacket] = uint8.map(ColumnsNumberPacket(_))

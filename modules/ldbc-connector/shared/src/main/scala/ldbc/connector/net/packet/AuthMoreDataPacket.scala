@@ -26,18 +26,18 @@ import cats.syntax.all.*
  *   Description: Extra authentication data beyond the initial challenge
  */
 case class AuthMoreDataPacket(
-  status: Int,
+  status:                   Int,
   authenticationMethodData: Int
 ) extends AuthenticationPacket:
-  
+
   override def toString: String = "Protocol::AuthMoreData"
 
 object AuthMoreDataPacket:
-  
+
   val STATUS = 1
 
   val decoder: Decoder[AuthMoreDataPacket] =
-    for 
+    for
       status <- uint4
-      data <- uint4
+      data   <- uint4
     yield AuthMoreDataPacket(status, data)
