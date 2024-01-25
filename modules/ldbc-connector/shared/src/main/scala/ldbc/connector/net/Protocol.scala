@@ -90,7 +90,6 @@ object Protocol:
             columns <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
             resultSetRow <- bms.receive(ResultSetRowPacket.decoder(columnCount.columnCount))
           yield
-            println(s"columnCount: ${columnCount.columnCount}")
-            println(columns.map(_.info).mkString(", "))
-            println(resultSetRow.value.mkString(", "))
+            println(s"columns: ${columns.map(_.info).mkString(", ")}")
+            println(s"records: ${resultSetRow.value.mkString(", ")}")
     }

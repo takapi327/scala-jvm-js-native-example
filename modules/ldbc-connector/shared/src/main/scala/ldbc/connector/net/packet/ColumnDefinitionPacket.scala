@@ -82,7 +82,7 @@ case class ColumnDefinitionPacket(
 
   override def toString: String = "Protocol::ColumnDefinition41"
 
-  def info: String = schema.getOrElse("") + table.fold("")("." + _) + name.fold("")("." + _) + " " + columnType
+  def info: String = schema.getOrElse("") + table.fold("")("." + _) + name.fold("")("." + _) + "Data Type Code: " + columnType
 
 object ColumnDefinitionPacket:
 
