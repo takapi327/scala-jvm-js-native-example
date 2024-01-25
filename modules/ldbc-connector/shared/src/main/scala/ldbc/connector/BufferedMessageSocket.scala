@@ -12,8 +12,9 @@ import cats.*
 import cats.syntax.all.*
 
 import cats.effect.*
-import cats.effect.std.{ Console, Queue }
-import cats.effect.implicits.*
+//import cats.effect.std.{ Console, Queue }
+import cats.effect.std.Console
+//import cats.effect.implicits.*
 
 import fs2.io.net.Socket
 
@@ -37,7 +38,7 @@ object BufferedMessageSocket:
    * condition, message processing has stopped, and any further attempts to send or receive should
    * result in `cause` being raised.
    */
-  private case class NetworkError(cause: Throwable) extends Packet
+  //private case class NetworkError(cause: Throwable) extends Packet
 
   def apply[F[_]: Temporal: Console](
     queueSize:   Int,
@@ -56,20 +57,20 @@ object BufferedMessageSocket:
    * with asynchronous messages, and messages that require us to record a bit of information that
    * the user might ask for later.
    */
-  private def next[F[_]: MonadThrow](
-    ms: MessageSocket[F],
-    // xaSig: Ref[F, TransactionStatus],
-    // paSig: Ref[F, Map[String, String]],
-    // bkDef: Deferred[F, BackendKeyData],
-    // noTop: Topic[F, Notification[String]],
-    queue: Queue[F, Packet]
-  ): F[Unit] =
-    def step: F[Unit] = ms.receive.flatMap(packet => queue.offer(packet)) >> step
+  //private def next[F[_]: MonadThrow](
+  //  ms: MessageSocket[F],
+  //  // xaSig: Ref[F, TransactionStatus],
+  //  // paSig: Ref[F, Map[String, String]],
+  //  // bkDef: Deferred[F, BackendKeyData],
+  //  // noTop: Topic[F, Notification[String]],
+  //  queue: Queue[F, Packet]
+  //): F[Unit] =
+  //  def step: F[Unit] = ms.receive.flatMap(packet => queue.offer(packet)) >> step
 
-    step.attempt.flatMap {
-      case Left(e)  => queue.offer(NetworkError(e)) // publish the failure
-      case Right(_) => Monad[F].unit
-    }
+  //  step.attempt.flatMap {
+  //    case Left(e)  => queue.offer(NetworkError(e)) // publish the failure
+  //    case Right(_) => Monad[F].unit
+  //  }
 
   /**
    * Here we read messages as they arrive, rather than waiting for the user to ask. This allows us
@@ -82,8 +83,8 @@ object BufferedMessageSocket:
   ): F[BufferedMessageSocket[F]] =
     for
       term  <- Ref[F].of[Option[Throwable]](None)
-      queue <- Queue.bounded[F, Packet](queueSize)
-      fib   <- next(ms, queue).start
+      //queue <- Queue.bounded[F, Packet](queueSize)
+      //fib   <- next(ms, queue).start
     yield new BufferedMessageSocket[F]:
 
       override def initialPacket: InitialPacket = ms.initialPacket
@@ -93,10 +94,11 @@ object BufferedMessageSocket:
         term.get.flatMap {
           case Some(t) => Concurrent[F].raiseError(t)
           case None =>
-            queue.take.flatMap {
-              case e: NetworkError => term.set(Some(e.cause)) *> receive
-              case m               => m.pure[F]
-            }
+            ms.receive
+            //queue.take.flatMap {
+            //  case e: NetworkError => term.set(Some(e.cause)) *> receive
+            //  case m               => m.pure[F]
+            //}
         }
 
       override def send(message: Message): F[Unit] =
@@ -106,9 +108,11 @@ object BufferedMessageSocket:
         }
 
       override protected def terminate: F[Unit] =
-        fib.cancel *> // stop processing incoming messages
+        //fib.cancel *> // stop processing incoming messages
           Console[F].println("Terminating")
         //  send(Terminate) // server will close the socket when it sees this
 
       override def history(max: Int): F[List[Either[Any, Any]]] =
         ms.history(max)
+
+      override def changeCommandPhase: F[Unit] = ms.changeCommandPhase

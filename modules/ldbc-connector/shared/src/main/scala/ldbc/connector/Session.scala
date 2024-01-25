@@ -25,7 +25,9 @@ import ldbc.connector.net.*
 import ldbc.connector.util.*
 import ldbc.connector.exception.LdbcException
 
-trait Session[F[_]]
+trait Session[F[_]]:
+  
+  def executeQuery(sql: String): F[Unit]
 
 object Session:
 
@@ -108,7 +110,8 @@ object Session:
     for
       protocol <- Protocol[F](debug, sockets, sslOptions, readTimeout)
       _        <- Resource.eval(protocol.authenticate(user, password.getOrElse("")))
-    yield new Impl[F] {}
+    yield new Impl[F]:
+      override def executeQuery(sql: String): F[Unit] = protocol.executeQuery(sql)
 
   def fromSocketGroup[F[_]: Tracer: Console](
     socketGroup:   SocketGroup[F],

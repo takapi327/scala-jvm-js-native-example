@@ -35,6 +35,8 @@ trait Protocol[F[_]]:
 
   def authenticate(user: String, password: String): F[Unit]
 
+  def executeQuery(sql: String): F[Unit]
+
 object Protocol:
 
   /**
@@ -79,4 +81,7 @@ object Protocol:
             case res: ResponsePacket if res.isEOFPacket => Concurrent[F].raiseError(new Exception("EOF Packet"))
             case _                                      => Concurrent[F].raiseError(new Exception("Unknown packet"))
           }
+
+        override def executeQuery(sql: String): F[Unit] =
+          bms.changeCommandPhase *> bms.send(ComQuery(sql))
     }

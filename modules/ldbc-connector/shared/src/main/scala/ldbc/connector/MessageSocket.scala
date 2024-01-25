@@ -43,6 +43,8 @@ trait MessageSocket[F[_]]:
   /** Destructively read the last `n` messages from the circular buffer. */
   def history(max: Int): F[List[Either[Any, Any]]]
 
+  def changeCommandPhase: F[Unit]
+
 object MessageSocket:
 
   def fromBitVectorSocket[F[_]: Concurrent: Console](
@@ -115,6 +117,9 @@ object MessageSocket:
               }
             pump(List(first))
           }
+
+        override def changeCommandPhase: F[Unit] =
+          sequenceIdRef.update(_ => 0.toByte)
     }
 
   def apply[F[_]: Console: Temporal](
