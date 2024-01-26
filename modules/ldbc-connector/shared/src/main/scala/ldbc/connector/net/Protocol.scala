@@ -88,8 +88,15 @@ object Protocol:
                              bms.send(ComQuery(sql)) *>
                              bms.receive(ColumnsNumberPacket.decoder)
             columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
-            resultSetRow <- bms.receive(ResultSetRowPacket.decoder(columnCount.columnCount))
+            resultSetRow <- bms.receive(ResultSetRowPacket.decoder(columns))
           yield
             println(s"columns: ${ columns.map(_.info).mkString(", ") }")
             println(s"records: ${ resultSetRow.value.mkString(", ") }")
+            resultSetRow.value.foreach {
+              case value: java.time.LocalTime => println(s"Time: $value")
+              case value: java.time.LocalDate => println(s"Date: $value")
+              case value: java.time.LocalDateTime => println(s"Timestamp: $value")
+              case value: String => println(s"String: $value")
+              case value => println(s"Unknown: $value")
+            }
     }
