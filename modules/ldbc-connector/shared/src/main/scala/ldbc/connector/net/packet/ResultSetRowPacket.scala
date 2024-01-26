@@ -8,22 +8,23 @@ package ldbc.connector.net.packet
 
 import scodec.*
 import scodec.codecs.*
+import scodec.interop.cats.*
 
 import cats.syntax.all.*
 
-case class ResultSetRowPacket(value: Seq[String]) extends Packet:
+import ldbc.connector.util.DataType
+
+case class ResultSetRowPacket(value: Seq[String | java.time.LocalTime | java.time.LocalDateTime | java.time.LocalDate | None.type]) extends Packet:
   override def toString: String = s"ProtocolText::ResultSetRow"
 
 object ResultSetRowPacket:
 
-  def decoder(columnLength: Int): Decoder[ResultSetRowPacket] =
-    def read(remaining: Int, acc: List[String]): Decoder[ResultSetRowPacket] =
-      if remaining <= 0 then Decoder.pure(ResultSetRowPacket(acc))
-      else
-        uint8.flatMap(length =>
-          if length == 0xfe then read(remaining - 1, acc)
-          else
-            bytes(length).asDecoder.map(_.decodeUtf8.getOrElse("")).flatMap(value => read(remaining - 1, acc :+ value))
-        )
-
-    read(columnLength, List.empty)
+  def decoder(columns: Seq[ColumnDefinitionPacket]): Decoder[ResultSetRowPacket] =
+    columns.traverse(column => uint8.flatMap(length =>
+      if length == 0xfe then Decoder.pure(None)
+      else column.columnType match
+        case DataType.MYSQL_TYPE_TIMESTAMP => timestamp(length).asDecoder
+        case DataType.MYSQL_TYPE_DATE => date.asDecoder
+        case DataType.MYSQL_TYPE_TIME => time.asDecoder
+        case _ => bytes(length).asDecoder.map(_.decodeUtf8.getOrElse(""))
+    )).map(ResultSetRowPacket(_))
