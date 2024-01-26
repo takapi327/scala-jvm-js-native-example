@@ -89,18 +89,12 @@ object ColumnDefinitionPacket:
 
   val decoder: Decoder[ColumnDefinitionPacket] =
     for
-      catalogLength  <- uint8
-      catalog        <- bytes(catalogLength).asDecoder
-      schemaLength   <- uint8
-      schema         <- bytes(schemaLength).asDecoder.map(_.decodeUtf8.getOrElse(""))
-      tableLength    <- uint8
-      table          <- bytes(tableLength).asDecoder.map(_.decodeUtf8.getOrElse(""))
-      orgTableLength <- uint8
-      orgTable       <- bytes(orgTableLength).asDecoder.map(_.decodeUtf8.getOrElse(""))
-      nameLength     <- uint8
-      name           <- bytes(nameLength).asDecoder.map(_.decodeUtf8.getOrElse(""))
-      orgNameLength  <- uint8
-      orgName        <- bytes(orgNameLength).asDecoder.map(_.decodeUtf8.getOrElse(""))
+      catalog        <- variableSizeBytes(uint8, utf8).asDecoder
+      schema         <- variableSizeBytes(uint8, utf8).asDecoder
+      table          <- variableSizeBytes(uint8, utf8).asDecoder
+      orgTable       <- variableSizeBytes(uint8, utf8).asDecoder
+      name           <- variableSizeBytes(uint8, utf8).asDecoder
+      orgName        <- variableSizeBytes(uint8, utf8).asDecoder
       length         <- uint8.asDecoder
       characterSet   <- uint16.asDecoder
       columnLength   <- uint32.asDecoder
@@ -108,7 +102,7 @@ object ColumnDefinitionPacket:
       flags          <- int(2).asDecoder
       decimals       <- int(1).asDecoder
     yield ColumnDefinitionPacket(
-      catalog      = catalog.decodeUtf8.getOrElse(""),
+      catalog      = catalog,
       schema       = if schema.isEmpty then None else schema.some,
       table        = if table.isEmpty then None else table.some,
       orgTable     = if orgTable.isEmpty then None else orgTable.some,
