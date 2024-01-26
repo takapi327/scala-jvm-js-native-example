@@ -53,6 +53,11 @@ lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
       "org.typelevel" %%% "otel4s-core-trace" % "0.4.0"
     )
   )
+  .platformsSettings(JSPlatform, NativePlatform)(
+    libraryDependencies ++= Seq(
+      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
+    )
+  )
   .enablePlugins(AutomateHeaderPlugin)
 
 lazy val jvm = (project in file("apps/jvm"))
