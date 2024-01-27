@@ -11,7 +11,7 @@ import scodec.codecs.*
 
 import cats.syntax.all.*
 
-import ldbc.connector.data.ColumnDefinitionFlags
+import ldbc.connector.data.*
 
 /**
  *
@@ -69,23 +69,20 @@ import ldbc.connector.data.ColumnDefinitionFlags
  */
 case class ColumnDefinitionPacket(
   catalog:      String,
-  schema:       Option[String],
-  table:        Option[String],
-  orgTable:     Option[String],
-  name:         Option[String],
-  orgName:      Option[String],
+  schema:       String,
+  table:        String,
+  orgTable:     String,
+  name:         String,
+  orgName:      String,
   length:       Int,
   characterSet: Int,
   columnLength: Long,
-  columnType:   Int,
+  columnType:   ColumnDataType,
   flags:        Seq[ColumnDefinitionFlags],
   decimals:     Int
 ) extends Packet:
 
   override def toString: String = "Protocol::ColumnDefinition41"
-
-  def info: String =
-    "[" + schema.getOrElse("") + table.fold("")("." + _) + name.fold("")("." + _) + " Data Type Code: " + columnType + s" Flags: ${flags.mkString(", ")}" + "]"
 
 object ColumnDefinitionPacket:
 
@@ -105,15 +102,15 @@ object ColumnDefinitionPacket:
       decimals       <- int(1).asDecoder
     yield ColumnDefinitionPacket(
       catalog      = catalog,
-      schema       = if schema.isEmpty then None else schema.some,
-      table        = if table.isEmpty then None else table.some,
-      orgTable     = if orgTable.isEmpty then None else orgTable.some,
-      name         = if name.isEmpty then None else name.some,
-      orgName      = if orgName.isEmpty then None else orgName.some,
+      schema       = schema,
+      table        = table,
+      orgTable     = orgTable,
+      name         = name,
+      orgName      = orgName,
       length       = length,
       characterSet = characterSet,
       columnLength = columnLength,
-      columnType   = columnType,
+      columnType   = ColumnDataType(columnType),
       flags        = ColumnDefinitionFlags(flags),
       decimals     = decimals
     )
