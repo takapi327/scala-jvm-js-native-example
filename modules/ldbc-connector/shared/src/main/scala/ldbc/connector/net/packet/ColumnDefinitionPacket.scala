@@ -11,6 +11,8 @@ import scodec.codecs.*
 
 import cats.syntax.all.*
 
+import ldbc.connector.data.ColumnDefinitionFlags
+
 /**
  *
  * @param catalog
@@ -76,14 +78,14 @@ case class ColumnDefinitionPacket(
   characterSet: Int,
   columnLength: Long,
   columnType:   Int,
-  flags:        Int,
+  flags:        Seq[ColumnDefinitionFlags],
   decimals:     Int
 ) extends Packet:
 
   override def toString: String = "Protocol::ColumnDefinition41"
 
   def info: String =
-    schema.getOrElse("") + table.fold("")("." + _) + name.fold("")("." + _) + " Data Type Code: " + columnType
+    "[" + schema.getOrElse("") + table.fold("")("." + _) + name.fold("")("." + _) + " Data Type Code: " + columnType + s" Flags: ${flags.mkString(", ")}" + "]"
 
 object ColumnDefinitionPacket:
 
@@ -99,7 +101,7 @@ object ColumnDefinitionPacket:
       characterSet   <- uint16.asDecoder
       columnLength   <- uint32.asDecoder
       columnType     <- uint8.asDecoder
-      flags          <- int(2).asDecoder
+      flags          <- uint16L.asDecoder
       decimals       <- int(1).asDecoder
     yield ColumnDefinitionPacket(
       catalog      = catalog,
@@ -112,6 +114,6 @@ object ColumnDefinitionPacket:
       characterSet = characterSet,
       columnLength = columnLength,
       columnType   = columnType,
-      flags        = flags,
+      flags        = ColumnDefinitionFlags(flags),
       decimals     = decimals
     )
