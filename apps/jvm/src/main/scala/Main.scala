@@ -4,8 +4,6 @@
  * For more information see LICENSE or https://opensource.org/licenses/MIT
  */
 
-import scala.concurrent.duration.*
-
 import cats.effect.*
 
 import fs2.*
@@ -14,6 +12,7 @@ import fs2.io.net.*
 import org.typelevel.otel4s.trace.Tracer
 
 import ldbc.connector.*
+import ldbc.connector.codec.all.*
 
 object Main extends IOApp:
 
@@ -31,7 +30,9 @@ object Main extends IOApp:
 
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
-      session.executeQuery("SELECT * FROM example.category") *>
-        IO.sleep(5.seconds) *>
-        IO.pure(ExitCode.Success)
+      for
+        result <- session.executeQuery("SELECT id, name FROM example.category")(bigint ~ varchar)
+      yield
+        result.foreach((id, name) => println(s"id: $id, name: $name"))
+        ExitCode.Success
     }
