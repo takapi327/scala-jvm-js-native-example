@@ -53,7 +53,7 @@ case class OKPacket(
   warnings:         Option[Int],
   info:             Int,
   sessionStateInfo: Option[Int]
-) extends AuthenticationPacket:
+) extends GenericResponsePackets:
 
   override def toString: String = "OK_Packet"
 

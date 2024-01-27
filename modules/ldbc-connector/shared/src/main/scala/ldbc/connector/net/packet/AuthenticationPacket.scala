@@ -15,7 +15,7 @@ trait AuthenticationPacket extends Packet
 
 object AuthenticationPacket:
 
-  val decoder: Decoder[AuthenticationPacket] =
+  val decoder: Decoder[AuthenticationPacket | GenericResponsePackets] =
     int8.flatMap { status =>
       (status: @switch) match
         case AuthMoreDataPacket.STATUS => AuthMoreDataPacket.decoder
