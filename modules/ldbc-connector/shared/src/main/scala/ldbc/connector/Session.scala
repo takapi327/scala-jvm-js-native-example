@@ -27,7 +27,7 @@ import ldbc.connector.exception.LdbcException
 
 trait Session[F[_]]:
 
-  def executeQuery(sql: String): F[Unit]
+  def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]]
 
 object Session:
 
@@ -111,7 +111,8 @@ object Session:
       protocol <- Protocol[F](debug, sockets, sslOptions, readTimeout)
       _        <- Resource.eval(protocol.authenticate(user, password.getOrElse("")))
     yield new Impl[F]:
-      override def executeQuery(sql: String): F[Unit] = protocol.executeQuery(sql)
+      override def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]] =
+        protocol.executeQuery(sql)(codec)
 
   def fromSocketGroup[F[_]: Tracer: Console](
     socketGroup:   SocketGroup[F],
