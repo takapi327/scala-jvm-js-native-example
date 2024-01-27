@@ -82,9 +82,12 @@ object Protocol:
 
           read(times, List.empty[P])
 
-        def readUntilEOF(columns: List[ColumnDefinitionPacket], acc: List[ResultSetRowPacket]): F[List[ResultSetRowPacket]] =
+        def readUntilEOF(
+          columns: List[ColumnDefinitionPacket],
+          acc:     List[ResultSetRowPacket]
+        ): F[List[ResultSetRowPacket]] =
           bms.receive(ResultSetRowPacket.decoder(columns)).flatMap {
-            case _: EOFPacket => Concurrent[F].pure(acc)
+            case _: EOFPacket            => Concurrent[F].pure(acc)
             case row: ResultSetRowPacket => readUntilEOF(columns, acc :+ row)
           }
 
@@ -96,11 +99,11 @@ object Protocol:
             columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
             resultSetRow <- readUntilEOF(columns, Nil)
           yield resultSetRow
-            .map(row => codec.decode(0, row.value) match
-              case Left(value) =>
-                val column = columns(value.offset)
-                throw new IllegalArgumentException(
-                  s"""
+            .map(row =>
+              codec.decode(0, row.value) match
+                case Left(value) =>
+                  val column = columns(value.offset)
+                  throw new IllegalArgumentException(s"""
                   |==========================
                   |Failed to decode column: `${ column.name }`
                   |Decode To: ${ column.columnType } -> ${ value.`type`.name.toUpperCase }
@@ -108,6 +111,6 @@ object Protocol:
                   |Message [ ${ value.message } ]
                   |==========================
                   |""".stripMargin)
-              case Right(value) => value
+                case Right(value) => value
             )
     }

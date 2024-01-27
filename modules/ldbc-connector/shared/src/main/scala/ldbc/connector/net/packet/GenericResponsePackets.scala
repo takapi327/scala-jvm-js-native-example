@@ -14,11 +14,11 @@ import scodec.codecs.*
 trait GenericResponsePackets extends Packet
 
 object GenericResponsePackets:
-  
+
   val decoder: Decoder[GenericResponsePackets] =
     int8.flatMap { status =>
       (status: @switch) match
-        case OKPacket.STATUS => OKPacket.decoder
+        case OKPacket.STATUS  => OKPacket.decoder
         case EOFPacket.STATUS => EOFPacket.decoder
         case ERRPacket.STATUS => ERRPacket.decoder
     }

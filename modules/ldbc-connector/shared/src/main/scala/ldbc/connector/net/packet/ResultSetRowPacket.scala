@@ -19,13 +19,18 @@ case class ResultSetRowPacket(value: List[Option[String]]) extends Packet:
 object ResultSetRowPacket:
 
   def decodeValue(length: Int): Decoder[Option[String]] =
-    bytes(length).asDecoder.map(_.decodeUtf8Lenient).map(value => if value.toUpperCase == "NULL" then None else value.some)
+    bytes(length).asDecoder
+      .map(_.decodeUtf8Lenient)
+      .map(value => if value.toUpperCase == "NULL" then None else value.some)
 
   def decoder(columns: Seq[ColumnDefinitionPacket]): Decoder[ResultSetRowPacket | EOFPacket] =
     uint8.flatMap {
       case EOFPacket.STATUS => EOFPacket.decoder
-      case length => columns.zipWithIndex.toList.traverse((_, index) =>
-        if index == 0 then decodeValue(length)
-        else uint8.flatMap(length => decodeValue(length))
-      ).map(ResultSetRowPacket(_))
+      case length =>
+        columns.zipWithIndex.toList
+          .traverse((_, index) =>
+            if index == 0 then decodeValue(length)
+            else uint8.flatMap(length => decodeValue(length))
+          )
+          .map(ResultSetRowPacket(_))
     }

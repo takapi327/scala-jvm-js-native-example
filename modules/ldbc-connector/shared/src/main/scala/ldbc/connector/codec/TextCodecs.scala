@@ -12,6 +12,6 @@ import ldbc.connector.Codec
 import ldbc.connector.data.Type
 
 trait TextCodecs:
-  
+
   val varchar: Codec[String] = Codec.simple(s => s, _.asRight, Type.varchar)
   def varchar(size: Int): Codec[String] = Codec.simple(s => s, _.asRight, Type.varchar(size))

@@ -9,7 +9,7 @@ package ldbc.connector
 import cats.*
 import cats.syntax.all.*
 
-import ldbc.connector.data.{Type, Encoded}
+import ldbc.connector.data.{ Type, Encoded }
 
 trait Codec[A] extends Decoder[A], Encoder[A]:
   outer =>
@@ -44,7 +44,7 @@ object Codec:
   def apply[A](
     encode0: A => List[Option[String]],
     decode0: (Int, List[Option[String]]) => Either[Decoder.Error, A],
-    oids0: List[Type]
+    oids0:   List[Type]
   ): Codec[A] =
     new Codec[A]:
       override def encode(a: A): List[Option[Encoded]] = encode0(a).map(_.map(Encoded(_)))
@@ -56,10 +56,11 @@ object Codec:
   def simple[A](encode: A => String, decode: String => Either[String, A], oid: Type): Codec[A] =
     apply(
       a => List(Some(encode(a))),
-      (n, ss) => ss match
-        case Some(s) :: Nil => decode(s).leftMap(Decoder.Error(n, 1, _, oid))
-        case None :: Nil => Left(Decoder.Error(n, 1, "Unexpected NULL value in non-optional column.", oid))
-        case _ => Left(Decoder.Error(n, 1, s"Expected one input value to decode, got ${ss.length}.", oid))
+      (n, ss) =>
+        ss match
+          case Some(s) :: Nil => decode(s).leftMap(Decoder.Error(n, 1, _, oid))
+          case None :: Nil    => Left(Decoder.Error(n, 1, "Unexpected NULL value in non-optional column.", oid))
+          case _ => Left(Decoder.Error(n, 1, s"Expected one input value to decode, got ${ ss.length }.", oid))
       ,
       List(oid)
     )

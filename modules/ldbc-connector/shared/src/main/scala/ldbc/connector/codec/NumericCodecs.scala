@@ -19,6 +19,6 @@ trait NumericCodecs:
 
   val tinyint: Codec[Short] = Codec.simple(_.toString, safe(_.toShort), Type.tinyint)
   def tinyint(n: Int): Codec[Short] = Codec.simple(_.toString, safe(_.toShort), Type.tinyint(n))
-  
+
   val bigint: Codec[Long] = Codec.simple(_.toString, safe(_.toLong), Type.bigint)
   def bigint(n: Int): Codec[Long] = Codec.simple(_.toString, safe(_.toLong), Type.bigint(n))

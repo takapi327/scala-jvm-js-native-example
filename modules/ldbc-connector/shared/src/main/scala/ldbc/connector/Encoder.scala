@@ -6,7 +6,7 @@
 
 package ldbc.connector
 
-import ldbc.connector.data.{Type, Encoded}
+import ldbc.connector.data.{ Type, Encoded }
 
 /**
  * Encoder of MySQL text-format data from Scala types.

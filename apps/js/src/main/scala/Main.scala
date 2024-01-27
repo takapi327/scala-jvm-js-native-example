@@ -30,8 +30,7 @@ object Main extends IOApp:
 
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
-      for
-        result <- session.executeQuery("SELECT id, name FROM example.category")(bigint ~ varchar)
+      for result <- session.executeQuery("SELECT id, name FROM example.category")(bigint ~ varchar)
       yield
         result.foreach((id, name) => println(s"id: $id, name: $name"))
         ExitCode.Success

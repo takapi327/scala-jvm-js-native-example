@@ -8,7 +8,7 @@ package ldbc.connector.data
 
 final case class Encoded(value: String, redacted: Boolean):
 
-  override def toString: String = if (redacted) Encoded.RedactedText else value
+  override def toString: String = if redacted then Encoded.RedactedText else value
 
 object Encoded:
 

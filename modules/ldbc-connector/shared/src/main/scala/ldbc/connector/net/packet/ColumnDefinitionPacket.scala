@@ -88,18 +88,18 @@ object ColumnDefinitionPacket:
 
   val decoder: Decoder[ColumnDefinitionPacket] =
     for
-      catalog        <- variableSizeBytes(uint8, utf8).asDecoder
-      schema         <- variableSizeBytes(uint8, utf8).asDecoder
-      table          <- variableSizeBytes(uint8, utf8).asDecoder
-      orgTable       <- variableSizeBytes(uint8, utf8).asDecoder
-      name           <- variableSizeBytes(uint8, utf8).asDecoder
-      orgName        <- variableSizeBytes(uint8, utf8).asDecoder
-      length         <- uint8.asDecoder
-      characterSet   <- uint16.asDecoder
-      columnLength   <- uint32.asDecoder
-      columnType     <- uint8.asDecoder
-      flags          <- uint16L.asDecoder
-      decimals       <- int(1).asDecoder
+      catalog      <- variableSizeBytes(uint8, utf8).asDecoder
+      schema       <- variableSizeBytes(uint8, utf8).asDecoder
+      table        <- variableSizeBytes(uint8, utf8).asDecoder
+      orgTable     <- variableSizeBytes(uint8, utf8).asDecoder
+      name         <- variableSizeBytes(uint8, utf8).asDecoder
+      orgName      <- variableSizeBytes(uint8, utf8).asDecoder
+      length       <- uint8.asDecoder
+      characterSet <- uint16.asDecoder
+      columnLength <- uint32.asDecoder
+      columnType   <- uint8.asDecoder
+      flags        <- uint16L.asDecoder
+      decimals     <- int(1).asDecoder
     yield ColumnDefinitionPacket(
       catalog      = catalog,
       schema       = schema,

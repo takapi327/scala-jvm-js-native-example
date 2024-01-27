@@ -10,21 +10,20 @@ import scodec.*
 import scodec.codecs.*
 
 case class EOFPacket(
-  status: Int,
-  warnings:         Int,
-  statusFlags:      Int,
+  status:      Int,
+  warnings:    Int,
+  statusFlags: Int
 ) extends GenericResponsePackets:
 
   override def toString: String = s"EOF_Packet"
-  
+
 object EOFPacket:
 
-  val STATUS = 0xFE
-  
+  val STATUS = 0xfe
+
   val decoder: Decoder[EOFPacket] =
     for
-      status <- uint4
-      warnings <- uint4
+      status      <- uint4
+      warnings    <- uint4
       statusFlags <- uint4
-    yield
-      EOFPacket(status, warnings, statusFlags)
+    yield EOFPacket(status, warnings, statusFlags)

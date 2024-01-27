@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 //import java.time.OffsetDateTime
 //import java.time.OffsetTime
-import java.time.temporal.ChronoField._
+import java.time.temporal.ChronoField.*
 import java.time.temporal.TemporalAccessor
 import java.time.format.DateTimeFormatterBuilder
 import java.time.format.SignStyle
@@ -29,8 +29,8 @@ trait TemporalCodecs:
 
   private def temporal[A <: TemporalAccessor](
     formatter: DateTimeFormatter,
-    parse: (String, DateTimeFormatter) => A,
-    tpe: Type
+    parse:     (String, DateTimeFormatter) => A,
+    tpe:       Type
   ): Codec[A] =
     Codec.simple(
       a => formatter.format(a),
@@ -49,8 +49,7 @@ trait TemporalCodecs:
         .appendValue(SECOND_OF_MINUTE, 2)
 
     if precision > 0 then
-      requiredPart
-        .optionalStart
+      requiredPart.optionalStart
         .appendFraction(NANO_OF_SECOND, 0, precision, true)
         .optionalEnd
       ()
@@ -81,10 +80,8 @@ trait TemporalCodecs:
     temporal(timeFormatter(6), LocalTime.parse, Type.time)
 
   def time(precision: Int): Codec[LocalTime] =
-    if precision >= 0 && precision <= 6 then
-      temporal(timeFormatter(precision), LocalTime.parse, Type.time(precision))
-    else
-      throw new IllegalArgumentException(s"time($precision): invalid precision, expected 0-6")
+    if precision >= 0 && precision <= 6 then temporal(timeFormatter(precision), LocalTime.parse, Type.time(precision))
+    else throw new IllegalArgumentException(s"time($precision): invalid precision, expected 0-6")
 
   val timestamp: Codec[LocalDateTime] =
     temporal(localDateTimeFormatter(6), LocalDateTime.parse, Type.timestamp)
