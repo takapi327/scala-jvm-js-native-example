@@ -12,30 +12,20 @@ import scodec.interop.cats.*
 
 import cats.syntax.all.*
 
-import ldbc.connector.data.*
+case class ResultSetRowPacket(value: List[Option[String]]) extends Packet:
 
-case class ResultSetRowPacket(value: Seq[Column[Byte | Int | Short | Long | String | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]]) extends Packet:
   override def toString: String = s"ProtocolText::ResultSetRow"
 
 object ResultSetRowPacket:
-  
-  private def columnDecode(column: ColumnDefinitionPacket, length: Int): Decoder[Column[Byte | Int | Short | Long | String | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]] =
-    column.columnType match
-      case ColumnDataType.MYSQL_TYPE_TIMESTAMP => timestamp(length).asDecoder.map(value => Column[java.time.LocalDateTime](column, value))
-      case ColumnDataType.MYSQL_TYPE_DATE => date.asDecoder.map(value => Column[java.time.LocalDate](column, value))
-      case ColumnDataType.MYSQL_TYPE_TIME => time.asDecoder.map(value => Column[java.time.LocalTime](column, value))
-      case ColumnDataType.MYSQL_TYPE_TINY if column.flags.contains(ColumnDefinitionFlags.UNSIGNED_FLAG) => uint8.asDecoder.map(value => Column[Short](column, value.toShort))
-      case ColumnDataType.MYSQL_TYPE_TINY => bytes(length).map(_.decodeUtf8Lenient.toShort).asDecoder.map(value => Column[Short](column, value))
-      case ColumnDataType.MYSQL_TYPE_LONGLONG if column.flags.contains(ColumnDefinitionFlags.UNSIGNED_FLAG) =>
-        bytes(length).map(_.decodeUtf8Lenient.toLong).asDecoder.map(value => Column[Long](column, value))
-      case ColumnDataType.MYSQL_TYPE_LONGLONG => int64L.asDecoder.map(value => Column[Long](column, value))
-      case _ => bytes(length).asDecoder.map(_.decodeUtf8Lenient).map(value => Column[String](column, value))
+
+  def decodeValue(length: Int): Decoder[Option[String]] =
+    bytes(length).asDecoder.map(_.decodeUtf8Lenient).map(value => if value.toUpperCase == "NULL" then None else value.some)
 
   def decoder(columns: Seq[ColumnDefinitionPacket]): Decoder[ResultSetRowPacket | EOFPacket] =
     uint8.flatMap {
       case EOFPacket.STATUS => EOFPacket.decoder
-      case length => columns.zipWithIndex.traverse((column, index) =>
-        if index == 0 then columnDecode(column, length)
-        else uint8.flatMap(length => columnDecode(column, length))
+      case length => columns.zipWithIndex.toList.traverse((_, index) =>
+        if index == 0 then decodeValue(length)
+        else uint8.flatMap(length => decodeValue(length))
       ).map(ResultSetRowPacket(_))
     }
