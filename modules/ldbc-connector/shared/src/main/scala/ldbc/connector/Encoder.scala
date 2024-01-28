@@ -6,12 +6,14 @@
 
 package ldbc.connector
 
+import org.typelevel.twiddles.TwiddleSyntax
+
 import ldbc.connector.data.{ Type, Encoded }
 
 /**
  * Encoder of MySQL text-format data from Scala types.
  */
-trait Encoder[A]:
+trait Encoder[A] extends TwiddleSyntax[Encoder]:
   outer =>
 
   /**

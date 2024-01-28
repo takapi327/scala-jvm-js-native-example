@@ -9,6 +9,8 @@ package ldbc.connector
 import cats.*
 import cats.syntax.all.*
 
+import org.typelevel.twiddles.TwiddleSyntax
+
 import ldbc.connector.data.{ Type, Encoded }
 
 trait Codec[A] extends Decoder[A], Encoder[A]:
@@ -36,7 +38,15 @@ trait Codec[A] extends Decoder[A], Encoder[A]:
   @scala.annotation.targetName("productTo")
   def ~[B](fb: Codec[B]): Codec[Codec.~[A, B]] = product(fb)
 
-object Codec:
+  /** Contramap inputs from, and map outputs to, a new type `B`, yielding a `Codec[B]`. */
+  def imap[B](f: A => B)(g: B => A): Codec[B] = new Codec[B]:
+    override def encode(b: B): List[Option[Encoded]] = outer.encode(g(b))
+
+    override def decode(offset: Int, ss: List[Option[String]]): Either[Decoder.Error, B] = outer.decode(offset, ss).map(f)
+
+    override val types: List[Type] = outer.types
+
+object Codec extends TwiddleSyntax[Codec]:
 
   @scala.annotation.targetName("productTo")
   type ~[+A, +B] = (A, B)
@@ -64,3 +74,11 @@ object Codec:
       ,
       List(oid)
     )
+
+  /**
+   * Codec is an invariant semgroupal functor.
+   */
+  given InvariantSemigroupalCodec: InvariantSemigroupal[Codec] =
+    new InvariantSemigroupal[Codec]:
+      override def imap[A, B](fa: Codec[A])(f: A => B)(g: B => A): Codec[B] = fa.imap(f)(g)
+      override def product[A, B](fa: Codec[A], fb: Codec[B]): Codec[(A, B)] = fa product fb

@@ -9,6 +9,8 @@ package ldbc.connector
 import cats.*
 import cats.syntax.all.*
 
+import org.typelevel.twiddles.TwiddleSyntax
+
 import ldbc.connector.data.Type
 
 /**
@@ -31,7 +33,7 @@ trait Decoder[A]:
         val (sa, sb) = ss.splitAt(outer.types.length)
         outer.decode(offset, sa) product fb.decode(offset + outer.length, sb)
 
-object Decoder:
+object Decoder extends TwiddleSyntax[Decoder]:
 
   /**
    * An error indicating that decoding a value starting at column `offset` and spanning `length`
