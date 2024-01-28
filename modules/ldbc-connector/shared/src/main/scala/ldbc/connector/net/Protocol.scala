@@ -19,7 +19,7 @@ import fs2.io.net.Socket
 
 import scodec.Decoder
 
-import ldbc.connector.BufferedMessageSocket
+import ldbc.connector.{BufferedMessageSocket, PreparedStatement}
 import ldbc.connector.net.protocol.Exchange
 import ldbc.connector.net.message.*
 import ldbc.connector.net.packet.*
@@ -38,6 +38,8 @@ trait Protocol[F[_]]:
   def authenticate(user: String, password: String): F[Unit]
 
   def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]]
+
+  def preparedStatement(sql: String): F[PreparedStatement[F]]
 
 object Protocol:
 
@@ -113,4 +115,15 @@ object Protocol:
                   |""".stripMargin)
                 case Right(value) => value
             )
+
+        override def preparedStatement(sql: String): F[PreparedStatement[F]] =
+          for
+            result <- bms.changeCommandPhase *> bms.send(ComStmtPrepare(sql)) *>
+              bms.receive(ComStmtPrepareOkPacket.decoder).flatMap {
+                case _: ERRPacket => Concurrent[F].raiseError(new Exception("Failed to prepare statement"))
+                case result: ComStmtPrepareOkPacket     => Concurrent[F].pure(result)
+              }
+          yield
+            println(result)
+            PreparedStatement(result.statementId, result.numParams, bms)
     }

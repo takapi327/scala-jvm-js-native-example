@@ -28,6 +28,7 @@ import ldbc.connector.exception.LdbcException
 trait Session[F[_]]:
 
   def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]]
+  def preparedStatement(sql: String): F[PreparedStatement[F]]
 
 object Session:
 
@@ -113,6 +114,8 @@ object Session:
     yield new Impl[F]:
       override def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]] =
         protocol.executeQuery(sql)(codec)
+
+      override def preparedStatement(sql: String): F[PreparedStatement[F]] = protocol.preparedStatement(sql)
 
   def fromSocketGroup[F[_]: Tracer: Console](
     socketGroup:   SocketGroup[F],
