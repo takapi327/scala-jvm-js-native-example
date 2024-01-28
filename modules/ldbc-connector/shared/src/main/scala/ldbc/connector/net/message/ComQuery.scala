@@ -14,6 +14,8 @@ import scodec.*
 import scodec.bits.*
 import scodec.interop.cats.*
 
+import ldbc.connector.data.CommandId
+
 case class ComQuery(sql: String) extends Message:
 
   override protected def encodeBody: Attempt[BitVector] =
@@ -30,7 +32,7 @@ object ComQuery:
     val sqlBytes = comQuery.sql.getBytes("UTF-8")
 
     Attempt.successful(
-      BitVector(0x03) |+|
+      BitVector(CommandId.COM_QUERY) |+|
         BitVector(0x00) |+|
         BitVector(0x01) |+|
         BitVector(copyOf(sqlBytes, sqlBytes.length))
