@@ -22,7 +22,7 @@ case class ComStmtPrepare(query: String) extends Message:
     ComStmtPrepare.encoder.encode(this)
 
   override def encode: BitVector = encodeBody.require
-  
+
   override def toString: String = "COM_STMT_PREPARE Request"
 
 object ComStmtPrepare:

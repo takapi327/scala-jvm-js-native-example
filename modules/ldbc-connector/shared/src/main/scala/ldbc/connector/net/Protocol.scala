@@ -19,7 +19,7 @@ import fs2.io.net.Socket
 
 import scodec.Decoder
 
-import ldbc.connector.{BufferedMessageSocket, PreparedStatement}
+import ldbc.connector.{ BufferedMessageSocket, PreparedStatement }
 import ldbc.connector.net.protocol.Exchange
 import ldbc.connector.net.message.*
 import ldbc.connector.net.packet.*
@@ -117,12 +117,11 @@ object Protocol:
             )
 
         override def preparedStatement(sql: String): F[PreparedStatement[F]] =
-          for
-            result <- bms.changeCommandPhase *> bms.send(ComStmtPrepare(sql)) *>
-              bms.receive(ComStmtPrepareOkPacket.decoder).flatMap {
-                case _: ERRPacket => Concurrent[F].raiseError(new Exception("Failed to prepare statement"))
-                case result: ComStmtPrepareOkPacket     => Concurrent[F].pure(result)
-              }
+          for result <- bms.changeCommandPhase *> bms.send(ComStmtPrepare(sql)) *>
+                          bms.receive(ComStmtPrepareOkPacket.decoder).flatMap {
+                            case _: ERRPacket => Concurrent[F].raiseError(new Exception("Failed to prepare statement"))
+                            case result: ComStmtPrepareOkPacket => Concurrent[F].pure(result)
+                          }
           yield
             println(result)
             PreparedStatement(result.statementId, result.numParams, bms)
