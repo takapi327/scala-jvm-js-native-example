@@ -42,7 +42,8 @@ trait Codec[A] extends Decoder[A], Encoder[A]:
   def imap[B](f: A => B)(g: B => A): Codec[B] = new Codec[B]:
     override def encode(b: B): List[Option[Encoded]] = outer.encode(g(b))
 
-    override def decode(offset: Int, ss: List[Option[String]]): Either[Decoder.Error, B] = outer.decode(offset, ss).map(f)
+    override def decode(offset: Int, ss: List[Option[String]]): Either[Decoder.Error, B] =
+      outer.decode(offset, ss).map(f)
 
     override val types: List[Type] = outer.types
 
@@ -80,5 +81,5 @@ object Codec extends TwiddleSyntax[Codec]:
    */
   given InvariantSemigroupalCodec: InvariantSemigroupal[Codec] =
     new InvariantSemigroupal[Codec]:
-      override def imap[A, B](fa: Codec[A])(f: A => B)(g: B => A): Codec[B] = fa.imap(f)(g)
+      override def imap[A, B](fa:    Codec[A])(f:  A => B)(g: B => A): Codec[B] = fa.imap(f)(g)
       override def product[A, B](fa: Codec[A], fb: Codec[B]): Codec[(A, B)] = fa product fb

@@ -33,11 +33,13 @@ object Main extends IOApp:
 
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
-      for result <- session.executeQuery("SELECT * FROM example.category")(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
-        yield
-          result.foreach {
-            case (id, name, slug, color, updatedAt, createdAt) =>
-              println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
-          }
-          ExitCode.Success
+      for result <- session.executeQuery("SELECT * FROM example.category")(
+                      bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
+                    )
+      yield
+        result.foreach {
+          case (id, name, slug, color, updatedAt, createdAt) =>
+            println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
+        }
+        ExitCode.Success
     }

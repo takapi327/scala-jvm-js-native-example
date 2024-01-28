@@ -30,7 +30,9 @@ object Main extends IOApp:
 
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
-      for result <- session.executeQuery("SELECT * FROM example.category")(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
+      for result <- session.executeQuery("SELECT * FROM example.category")(
+                      bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
+                    )
       yield
         result.foreach {
           case (id, name, slug, color, updatedAt, createdAt) =>
