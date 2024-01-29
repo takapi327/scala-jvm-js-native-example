@@ -21,17 +21,7 @@ case class ComStmtPrepareOkPacket(
   metadataFollows: Int
 ) extends Packet:
 
-  // override def toString: String = "COM_STMT_PREPARE_OK Packet"
-  override def toString: String =
-    s"""|COM_STMT_PREPARE_OK Packet
-        |  status: $status
-        |  statementId: $statementId
-        |  numColumns: $numColumns
-        |  numParams: $numParams
-        |  reserved1: $reserved1
-        |  warningCount: $warningCount
-        |  metadataFollows: $metadataFollows
-        |""".stripMargin
+  override def toString: String = "COM_STMT_PREPARE_OK Packet"
 
 object ComStmtPrepareOkPacket:
 
