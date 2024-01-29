@@ -31,13 +31,93 @@ package object packet:
       second      <- uint8
       microsecond <- uint32L
     yield java.time.LocalTime.of(hour, minute, second, microsecond.toInt * 1000)
+    
+  def timestamp4: Decoder[java.time.LocalDateTime] =
+    for
+      year <- uint16L
+      month <- uint8
+      day <- uint8
+    yield java.time.LocalDateTime.of(year, month, day, 0, 0, 0, 0)
+  
+  def timestamp7: Decoder[java.time.LocalDateTime] =
+    for
+      year <- uint16L
+      month <- uint8
+      day <- uint8
+      hour        <- uint8
+      minute      <- uint8L
+      second      <- uint8L
+    yield java.time.LocalDateTime.of(year, month, day, hour, minute, second, 0)
 
-  def timestamp(length: Int): Decoder[java.time.LocalDateTime] =
-    bytes(length).asDecoder.map(_.decodeUtf8 match
-      case Left(value) => throw value
-      case Right(value) =>
-        java.time.LocalDateTime.parse(value, java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-    )
+  def timestamp11: Decoder[java.time.LocalDateTime] =
+    for
+      year <- uint16L
+      month <- uint8
+      day <- uint8
+      hour <- uint8
+      minute <- uint8L
+      second <- uint8L
+      microsecond <- uint32L
+    yield java.time.LocalDateTime.of(year, month, day, hour, minute, second, microsecond.toInt * 1000)
+
+
+  /**
+   * 
+   * <table>
+   *   <thead>
+   *     <tr>
+   *       <th left>Type</th>
+   *       <th>Name</th>
+   *       <th>Description</th>
+   *     </tr>
+   *   </thead>
+   *   <tbody>
+   *     <tr>
+   *       <td>int<1></td>
+   *       <td>length</td>
+   *       <td>number of bytes following (valid values: 0, 8, 12)</td>
+   *     </tr>
+   *     <tr>
+   *       <td>int<1></td>
+   *       <td>is_negative</td>
+   *       <td>1 if minus, 0 for plus</td>
+   *     </tr>
+   *     <tr>
+   *       <td>int<4></td>
+   *       <td>days</td>
+   *       <td>days</td>
+   *     </tr>
+   *     <tr>
+   *       <td>int<1></td>
+   *       <td>hour</td>
+   *       <td>hour</td>
+   *     </tr>
+   *     <tr>
+   *       <td>int<1></td>
+   *       <td>minute</td>
+   *       <td>minute</td>
+   *     </tr>
+   *     <tr>
+   *       <td>int<1></td>
+   *       <td>second</td>
+   *       <td>second</td>
+   *     </tr>
+   *     <tr>
+   *       <td>int<1></td>
+   *       <td>microsecond</td>
+   *       <td>micro seconds</td>
+   *     </tr>
+   *   </tbody>
+   * </table>
+   */
+  def timestamp: Decoder[Option[java.time.LocalDateTime]] =
+    uint8.flatMap {
+      case 0 => Decoder.pure(None)
+      case 4 => timestamp4.map(Some(_))
+      case 7 => timestamp7.map(Some(_))
+      case 11 => timestamp11.map(Some(_))
+      case _ => throw new IllegalArgumentException("Invalid timestamp length")
+    }
 
   def date: Decoder[java.time.LocalDate] =
     for
