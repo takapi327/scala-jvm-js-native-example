@@ -12,7 +12,7 @@ import fs2.io.net.*
 import org.typelevel.otel4s.trace.Tracer
 
 import ldbc.connector.*
-//import ldbc.connector.codec.all.*
+import ldbc.connector.codec.all.*
 
 object Main extends IOApp:
 
@@ -35,13 +35,13 @@ object Main extends IOApp:
         //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
         //            )
         preparedStatement <- session.preparedStatement("SELECT * FROM example.category WHERE id = ? & name = ?")
-        _                 <- preparedStatement.executeQuery()
+        result            <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
       yield
-      // result.foreach {
-      //  case (id, name, slug, color, updatedAt, createdAt) =>
-      //    println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
-      // }
-      ExitCode.Success
+        result.foreach {
+         case (id, name, slug, color, updatedAt, createdAt) =>
+           println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
+        }
+        ExitCode.Success
     }
 
 import scala.util.Using
@@ -52,7 +52,7 @@ object JDBC:
 
   val dataSource = new MysqlDataSource()
   dataSource.setServerName("127.0.0.1")
-  dataSource.setPortNumber(3306)
+  dataSource.setPortNumber(13306)
   dataSource.setUser("root")
   dataSource.setPassword("root")
   dataSource.setUseSSL(false)
