@@ -65,6 +65,7 @@ lazy val jvm = (project in file("apps/jvm"))
   .settings(name := "scala-jvm-example")
   .settings(compileSettings)
   .settings(run / fork := true)
+  .settings(libraryDependencies += "com.mysql" % "mysql-connector-j" % "8.2.0")
   .dependsOn(connector.jvm)
 
 lazy val js = (project in file("apps/js"))
