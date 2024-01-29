@@ -40,9 +40,9 @@ object Main extends IOApp:
         preparedStatement <- session.preparedStatement("SELECT * FROM example.category WHERE id = ? & name = ?")
         _                 <- preparedStatement.executeQuery()
       yield
-        // result.foreach {
-        //  case (id, name, slug, color, updatedAt, createdAt) =>
-        //    println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
-        // }
-        ExitCode.Success
+      // result.foreach {
+      //  case (id, name, slug, color, updatedAt, createdAt) =>
+      //    println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
+      // }
+      ExitCode.Success
     }

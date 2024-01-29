@@ -50,9 +50,9 @@ object ComStmtExecute:
         case str: String =>
           val bytes = str.getBytes("UTF-8")
           BitVector(bytes.length) |+|
-          BitVector(copyOf(bytes, bytes.length))
-        case long: Long =>BitVector(long.toString.length) |+| uint32L.encode(long).require
-        )
+            BitVector(copyOf(bytes, bytes.length))
+        case long: Long => BitVector(long.toString.length) |+| uint32L.encode(long).require
+      )
     }
 
     Attempt.successful(
