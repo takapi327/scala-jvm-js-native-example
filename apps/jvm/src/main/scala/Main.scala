@@ -35,11 +35,11 @@ object Main extends IOApp:
         //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
         //            )
         preparedStatement <- session.preparedStatement("SELECT * FROM example.category WHERE id = ? & name = ?")
-        result            <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
+        result <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
       yield
         result.foreach {
-         case (id, name, slug, color, updatedAt, createdAt) =>
-           println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
+          case (id, name, slug, color, updatedAt, createdAt) =>
+            println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
         }
         ExitCode.Success
     }

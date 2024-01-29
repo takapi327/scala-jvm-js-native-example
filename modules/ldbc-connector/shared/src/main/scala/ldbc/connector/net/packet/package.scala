@@ -31,35 +31,34 @@ package object packet:
       second      <- uint8
       microsecond <- uint32L
     yield java.time.LocalTime.of(hour, minute, second, microsecond.toInt * 1000)
-    
+
   def timestamp4: Decoder[java.time.LocalDateTime] =
     for
-      year <- uint16L
+      year  <- uint16L
       month <- uint8
-      day <- uint8
+      day   <- uint8
     yield java.time.LocalDateTime.of(year, month, day, 0, 0, 0, 0)
-  
+
   def timestamp7: Decoder[java.time.LocalDateTime] =
     for
-      year <- uint16L
-      month <- uint8
-      day <- uint8
-      hour        <- uint8
-      minute      <- uint8L
-      second      <- uint8L
+      year   <- uint16L
+      month  <- uint8
+      day    <- uint8
+      hour   <- uint8
+      minute <- uint8L
+      second <- uint8L
     yield java.time.LocalDateTime.of(year, month, day, hour, minute, second, 0)
 
   def timestamp11: Decoder[java.time.LocalDateTime] =
     for
-      year <- uint16L
-      month <- uint8
-      day <- uint8
-      hour <- uint8
-      minute <- uint8L
-      second <- uint8L
+      year        <- uint16L
+      month       <- uint8
+      day         <- uint8
+      hour        <- uint8
+      minute      <- uint8L
+      second      <- uint8L
       microsecond <- uint32L
     yield java.time.LocalDateTime.of(year, month, day, hour, minute, second, microsecond.toInt * 1000)
-
 
   /**
    * 
@@ -112,11 +111,11 @@ package object packet:
    */
   def timestamp: Decoder[Option[java.time.LocalDateTime]] =
     uint8.flatMap {
-      case 0 => Decoder.pure(None)
-      case 4 => timestamp4.map(Some(_))
-      case 7 => timestamp7.map(Some(_))
+      case 0  => Decoder.pure(None)
+      case 4  => timestamp4.map(Some(_))
+      case 7  => timestamp7.map(Some(_))
       case 11 => timestamp11.map(Some(_))
-      case _ => throw new IllegalArgumentException("Invalid timestamp length")
+      case _  => throw new IllegalArgumentException("Invalid timestamp length")
     }
 
   def date: Decoder[java.time.LocalDate] =

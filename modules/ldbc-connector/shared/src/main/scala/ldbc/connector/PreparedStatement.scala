@@ -33,7 +33,7 @@ class PreparedStatement[F[_]: Concurrent](statementId: Long, numParams: Int, bms
 
   private def readUntilEOF(
     columns: List[ColumnDefinitionPacket],
-    acc: List[BinaryProtocolResultSetRowPacket]
+    acc:     List[BinaryProtocolResultSetRowPacket]
   ): F[List[BinaryProtocolResultSetRowPacket]] =
     bms.receive(BinaryProtocolResultSetRowPacket.decoder(columns)).flatMap {
       case _: EOFPacket => Concurrent[F].pure(acc)
@@ -44,12 +44,12 @@ class PreparedStatement[F[_]: Concurrent](statementId: Long, numParams: Int, bms
   def executeQuery[A](codec: ldbc.connector.Codec[A]): F[List[A]] =
     for
       columnCount <- bms.changeCommandPhase *> bms.send(
-        ComStmtExecute(
-          statementId,
-          numParams,
-          Map(DataType.MYSQL_TYPE_LONGLONG -> 1L, DataType.MYSQL_TYPE_VAR_STRING -> "Category 1")
-        )
-      ) *> bms.receive(ColumnsNumberPacket.decoder)
+                       ComStmtExecute(
+                         statementId,
+                         numParams,
+                         Map(DataType.MYSQL_TYPE_LONGLONG -> 1L, DataType.MYSQL_TYPE_VAR_STRING -> "Category 1")
+                       )
+                     ) *> bms.receive(ColumnsNumberPacket.decoder)
       columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
       resultSetRow <- readUntilEOF(columns, Nil)
     yield resultSetRow.map(row =>

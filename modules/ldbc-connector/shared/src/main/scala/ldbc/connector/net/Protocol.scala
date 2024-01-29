@@ -119,10 +119,10 @@ object Protocol:
         override def preparedStatement(sql: String): F[PreparedStatement[F]] =
           for
             result <- bms.changeCommandPhase *> bms.send(ComStmtPrepare(sql)) *>
-                          bms.receive(ComStmtPrepareOkPacket.decoder).flatMap {
-                            case _: ERRPacket => Concurrent[F].raiseError(new Exception("Failed to prepare statement"))
-                            case result: ComStmtPrepareOkPacket => Concurrent[F].pure(result)
-                          }
+                        bms.receive(ComStmtPrepareOkPacket.decoder).flatMap {
+                          case _: ERRPacket => Concurrent[F].raiseError(new Exception("Failed to prepare statement"))
+                          case result: ComStmtPrepareOkPacket => Concurrent[F].pure(result)
+                        }
             _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
             _ <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
           yield PreparedStatement(result.statementId, result.numParams, bms)
