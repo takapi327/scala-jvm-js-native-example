@@ -11,6 +11,7 @@ import cats.data.StateT
 import cats.syntax.all.*
 
 import ldbc.connector.net.message.ComStmtExecute
+import ldbc.connector.util.DataType
 
 class PreparedStatement[F[_]: Monad](statementId: Long, numParams: Int, bms: BufferedMessageSocket[F]):
 
@@ -21,7 +22,8 @@ class PreparedStatement[F[_]: Monad](statementId: Long, numParams: Int, bms: Buf
     StateT.modify[F, Map[Int, String]](_ + (index -> s"'$value'"))
 
   def executeQuery(): F[Unit] =
-    bms.changeCommandPhase *> bms.send(ComStmtExecute(statementId, numParams, List("foo")))
+    bms.changeCommandPhase *> 
+      bms.send(ComStmtExecute(statementId, numParams, Map(DataType.MYSQL_TYPE_LONGLONG -> 1L, DataType.MYSQL_TYPE_VAR_STRING -> "foo")))
 
 object PreparedStatement:
 
