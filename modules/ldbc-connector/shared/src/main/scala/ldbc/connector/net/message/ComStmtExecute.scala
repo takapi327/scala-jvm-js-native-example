@@ -12,12 +12,13 @@ import cats.syntax.all.*
 
 import scodec.*
 import scodec.bits.*
+import scodec.codecs.*
 import scodec.interop.cats.*
 
 import ldbc.connector.data.*
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
-case class ComStmtExecute(statementId: Long, numParams: Int, params: List[String]) extends Message:
+case class ComStmtExecute(statementId: Long, numParams: Int, params: Map[Int, Long | String]) extends Message:
 
   override protected def encodeBody: Attempt[BitVector] =
     ComStmtExecute.encoder.encode(this)
@@ -29,40 +30,40 @@ case class ComStmtExecute(statementId: Long, numParams: Int, params: List[String
 object ComStmtExecute:
 
   val encoder: Encoder[ComStmtExecute] = Encoder { comStmtExecute =>
-    val hoge = if comStmtExecute.numParams > 0 then
+    val nullBitmap: BitVector = if comStmtExecute.numParams > 0 then
       val size = (comStmtExecute.numParams + 7) / 8
-      var test: BitVector = BitVector.empty
-      for i <- 0 until size do test = test |+| BitVector(0)
-      test
+
+      @annotation.tailrec
+      def buildBitVector(index: Int, acc: BitVector): BitVector =
+        if index == size then acc
+        else buildBitVector(index + 1, acc |+| BitVector(0))
+
+      BitVector(comStmtExecute.numParams) |+| buildBitVector(0, BitVector.empty)
     else BitVector.empty
 
-    var values = BitVector.empty
-    comStmtExecute.params.foreach(value =>
-      val bytes = value.getBytes("UTF-8")
-      values = values |+| BitVector(ColumnDataType.MYSQL_TYPE_VARCHAR.code) |+| BitVector(0) |+| BitVector(
-        value.length
-      ) |+| BitVector(copyOf(bytes, bytes.length))
-    )
+    val types = comStmtExecute.params.keys.foldLeft(BitVector.empty) { (acc, value) =>
+      acc |+| BitVector(value) |+| BitVector(0) |+| BitVector(0)
+    }
+
+    val values = comStmtExecute.params.values.foldLeft(BitVector.empty) { (acc, value) =>
+      acc |+| (value match
+        case str: String =>
+          val bytes = str.getBytes("UTF-8")
+          BitVector(bytes.length) |+|
+          BitVector(copyOf(bytes, bytes.length))
+        case long: Long =>BitVector(long.toString.length) |+| uint32L.encode(long).require
+        )
+    }
 
     Attempt.successful(
       BitVector(CommandId.COM_STMT_EXECUTE) |+|
         BitVector(comStmtExecute.statementId) |+|
-        BitVector(0) |+|
-        BitVector(0) |+|
-        BitVector(0) |+|
-        BitVector(EnumCursorType.CURSOR_TYPE_NO_CURSOR.code) |+|
-        BitVector(1) |+|
-        BitVector(0) |+|
-        BitVector(0) |+|
-        BitVector(0) |+|
-        // BitVector(0) |+|
-        hoge |+|
-        // BitVector(comStmtExecute.params.length.toString.length) |+|
-        // BitVector(comStmtExecute.params.length) |+|
-        // BitVector(0x0f) |+|
-        // BitVector(0) |+|
-        // BitVector(1) |+|
-        // BitVector(ColumnDataType.MYSQL_TYPE_VARCHAR.code) |+|
+        BitVector(Array[Byte](0, 0, 0)) |+|
+        BitVector(EnumCursorType.PARAMETER_COUNT_AVAILABLE.code) |+|
+        BitVector(Array[Byte](1, 0, 0, 0)) |+|
+        nullBitmap |+|
+        BitVector(1) |+| // new_params_bind_flag,	Always 1. Malformed packet error if not 1
+        types |+|
         values
     )
   }
