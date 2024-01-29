@@ -4,7 +4,7 @@
  * For more information see LICENSE or https://opensource.org/licenses/MIT
  */
 
-import scala.concurrent.duration.*
+//import scala.concurrent.duration.*
 
 import cats.effect.*
 //import epollcat.EpollApp
@@ -15,7 +15,7 @@ import fs2.io.net.*
 import org.typelevel.otel4s.trace.Tracer
 
 import ldbc.connector.*
-import ldbc.connector.codec.all.*
+//import ldbc.connector.codec.all.*
 
 object Main extends IOApp:
 
@@ -33,13 +33,16 @@ object Main extends IOApp:
 
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
-      for result <- session.executeQuery("SELECT * FROM example.category")(
-                      bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
-                    )
+      for
+        // result <- session.executeQuery("SELECT * FROM example.category")(
+        //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
+        //            )
+        preparedStatement <- session.preparedStatement("SELECT * FROM example.category WHERE id = ? & name = ?")
+        _                 <- preparedStatement.executeQuery()
       yield
-        result.foreach {
-          case (id, name, slug, color, updatedAt, createdAt) =>
-            println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
-        }
+        // result.foreach {
+        //  case (id, name, slug, color, updatedAt, createdAt) =>
+        //    println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
+        // }
         ExitCode.Success
     }
