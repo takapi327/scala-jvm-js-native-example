@@ -123,8 +123,8 @@ object Protocol:
                           case _: ERRPacket => Concurrent[F].raiseError(new Exception("Failed to prepare statement"))
                           case result: ComStmtPrepareOkPacket => Concurrent[F].pure(result)
                         }
-            _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
-            _ <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
+            _      <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
+            _      <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
             params <- Ref[F].of(Map.empty[Int, Long | String])
           yield PreparedStatement(result.statementId, result.numParams, bms, params)
     }

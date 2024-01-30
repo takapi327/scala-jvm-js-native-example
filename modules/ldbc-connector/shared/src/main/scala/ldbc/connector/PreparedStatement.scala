@@ -17,19 +17,19 @@ import ldbc.connector.net.packet.*
 import ldbc.connector.util.DataType
 
 class PreparedStatement[F[_]: Concurrent](
-                                           statementId: Long, 
-                                           numParams: Int,
-                                           bms: BufferedMessageSocket[F],
-                                           params: Ref[F, Map[Int, Long | String]]
-                                         ):
+  statementId: Long,
+  numParams:   Int,
+  bms:         BufferedMessageSocket[F],
+  params:      Ref[F, Map[Int, Long | String]]
+):
 
   def setLong(value: Long): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_LONGLONG -> value))
-    //StateT.modify[F, Map[Int, String]](_ + (index -> value.toString))
+    // StateT.modify[F, Map[Int, String]](_ + (index -> value.toString))
 
   def setString(value: String): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
-    //StateT.modify[F, Map[Int, String]](_ + (index -> s"'$value'"))
+    // StateT.modify[F, Map[Int, String]](_ + (index -> s"'$value'"))
 
   private def repeatProcess[P <: Packet](times: Int, decoder: scodec.Decoder[P]): F[List[P]] =
     def read(remaining: Int, acc: List[P]): F[List[P]] =
@@ -50,7 +50,7 @@ class PreparedStatement[F[_]: Concurrent](
 
   def executeQuery[A](codec: ldbc.connector.Codec[A]): F[List[A]] =
     for
-      params      <- params.get
+      params <- params.get
       columnCount <- bms.changeCommandPhase *> bms.send(
                        ComStmtExecute(
                          statementId,
