@@ -34,7 +34,8 @@ object Main extends IOApp:
         // result <- session.executeQuery("SELECT * FROM example.category")(
         //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
         //            )
-        preparedStatement <- session.preparedStatement("SELECT * FROM example.category WHERE id = ? & name = ?")
+        preparedStatement <- session.preparedStatement("SELECT * FROM example.category WHERE id = ? AND name = ?")
+        _ <- preparedStatement.setLong(1L) *> preparedStatement.setString("Category 1")
         result <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
       yield
         result.foreach {
@@ -61,7 +62,7 @@ object JDBC:
         val connection: JdbcConnection = use(dataSource.getConnection.asInstanceOf[JdbcConnection])
         // val statement = use(connection.prepareStatement("SELECT * FROM example.category WHERE name = ?"))
         // val statement = use(ServerPreparedStatement.getInstance(connection, "SELECT * FROM example.category WHERE name = ?", "example", 0, 0))
-        val statement = connection.serverPrepareStatement("SELECT * FROM example.category WHERE id = ? & name = ?")
+        val statement = connection.serverPrepareStatement("SELECT * FROM example.category WHERE id = ? AND slug = ?")
         // val statement = use(connection.createStatement())
         statement.setLong(1, 1L)
         statement.setString(2, "foo")
