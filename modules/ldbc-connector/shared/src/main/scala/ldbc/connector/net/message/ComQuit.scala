@@ -19,7 +19,7 @@ case class ComQuit() extends Message:
   override def encode: BitVector = encodeBody.require
 
   override def toString: String = "COM_QUIT Request"
-  
+
 object ComQuit:
-  
+
   val encoder: Encoder[ComQuit] = Encoder(_ => Attempt.successful(BitVector(CommandId.COM_QUIT)))
