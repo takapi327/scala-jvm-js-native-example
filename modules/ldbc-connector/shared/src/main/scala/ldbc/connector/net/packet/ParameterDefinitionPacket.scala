@@ -82,7 +82,7 @@ case class ParameterDefinitionPacket(
   decimals:     Int
 ) extends Packet:
 
-  override def toString: String = s"Protocol::ParameterDefinitionPacket $name"
+  override def toString: String = "Protocol::ParameterDefinitionPacket"
 
 object ParameterDefinitionPacket:
 

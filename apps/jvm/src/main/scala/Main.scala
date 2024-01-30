@@ -46,8 +46,6 @@ object Main extends IOApp:
 
 import scala.util.Using
 import com.mysql.cj.jdbc.*
-//import software.aws.rds.jdbc.mysql.shading.com.mysql.cj.jdbc.MysqlDataSource
-//import software.aws.rds.jdbc.mysql.shading.com.mysql.cj.jdbc.ServerPreparedStatement
 object JDBC:
 
   val dataSource = new MysqlDataSource()
