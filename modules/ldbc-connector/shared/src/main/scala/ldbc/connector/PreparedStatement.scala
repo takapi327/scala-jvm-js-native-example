@@ -16,13 +16,20 @@ import ldbc.connector.net.message.*
 import ldbc.connector.net.packet.*
 import ldbc.connector.util.DataType
 
-class PreparedStatement[F[_]: Concurrent](statementId: Long, numParams: Int, bms: BufferedMessageSocket[F]):
+class PreparedStatement[F[_]: Concurrent](
+                                           statementId: Long, 
+                                           numParams: Int,
+                                           bms: BufferedMessageSocket[F],
+                                           params: Ref[F, Map[Int, Long | String]]
+                                         ):
 
-  def setInt(index: Int, value: Int): PreparedStatement.QueryState[F, Unit] =
-    StateT.modify[F, Map[Int, String]](_ + (index -> value.toString))
+  def setLong(value: Long): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_LONGLONG -> value))
+    //StateT.modify[F, Map[Int, String]](_ + (index -> value.toString))
 
-  def setString(index: Int, value: String): PreparedStatement.QueryState[F, Unit] =
-    StateT.modify[F, Map[Int, String]](_ + (index -> s"'$value'"))
+  def setString(value: String): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
+    //StateT.modify[F, Map[Int, String]](_ + (index -> s"'$value'"))
 
   private def repeatProcess[P <: Packet](times: Int, decoder: scodec.Decoder[P]): F[List[P]] =
     def read(remaining: Int, acc: List[P]): F[List[P]] =
@@ -43,11 +50,12 @@ class PreparedStatement[F[_]: Concurrent](statementId: Long, numParams: Int, bms
 
   def executeQuery[A](codec: ldbc.connector.Codec[A]): F[List[A]] =
     for
+      params      <- params.get
       columnCount <- bms.changeCommandPhase *> bms.send(
                        ComStmtExecute(
                          statementId,
                          numParams,
-                         Map(DataType.MYSQL_TYPE_LONGLONG -> 1L, DataType.MYSQL_TYPE_VAR_STRING -> "Category 1")
+                         params
                        )
                      ) *> bms.receive(ColumnsNumberPacket.decoder)
       columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)

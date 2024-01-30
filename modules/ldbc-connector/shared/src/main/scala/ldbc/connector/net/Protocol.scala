@@ -125,5 +125,6 @@ object Protocol:
                         }
             _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
             _ <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
-          yield PreparedStatement(result.statementId, result.numParams, bms)
+            params <- Ref[F].of(Map.empty[Int, Long | String])
+          yield PreparedStatement(result.statementId, result.numParams, bms, params)
     }
