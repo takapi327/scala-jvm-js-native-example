@@ -41,6 +41,8 @@ trait Protocol[F[_]]:
 
   def preparedStatement(sql: String): F[PreparedStatement[F]]
 
+  def close(): F[Unit]
+
 object Protocol:
 
   /**
@@ -54,7 +56,7 @@ object Protocol:
   ): Resource[F, Protocol[F]] =
     for
       bms      <- BufferedMessageSocket[F](256, debug, sockets, sslOptions, readTimeout)
-      protocol <- Resource.eval(fromMessageSocket[F](bms))
+      protocol <- Resource.make(fromMessageSocket[F](bms))(_.close())
     yield protocol
 
   def fromMessageSocket[F[_]: Concurrent: Tracer](
@@ -127,4 +129,6 @@ object Protocol:
             _      <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
             params <- Ref[F].of(Map.empty[Int, Long | String])
           yield PreparedStatement(result.statementId, result.numParams, bms, params)
+
+        override def close(): F[Unit] = bms.changeCommandPhase *> bms.send(ComQuit())
     }

@@ -28,6 +28,7 @@ import ldbc.connector.exception.LdbcException
 trait Session[F[_]]:
 
   def executeQuery[A](sql:   String)(codec: ldbc.connector.Codec[A]): F[List[A]]
+
   def preparedStatement(sql: String): F[PreparedStatement[F]]
 
 object Session:
