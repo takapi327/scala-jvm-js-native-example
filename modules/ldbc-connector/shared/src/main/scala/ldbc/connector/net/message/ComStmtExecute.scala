@@ -30,16 +30,6 @@ case class ComStmtExecute(statementId: Long, numParams: Int, params: Map[Int, Lo
 object ComStmtExecute:
 
   val encoder: Encoder[ComStmtExecute] = Encoder { comStmtExecute =>
-    val nullBitmap: BitVector = if comStmtExecute.numParams > 0 then
-      val size = (comStmtExecute.numParams + 7) / 8
-
-      @annotation.tailrec
-      def buildBitVector(index: Int, acc: BitVector): BitVector =
-        if index == size then acc
-        else buildBitVector(index + 1, acc |+| BitVector(0))
-
-      BitVector(comStmtExecute.numParams) |+| buildBitVector(0, BitVector.empty)
-    else BitVector.empty
 
     val types = comStmtExecute.params.keys.foldLeft(BitVector.empty) { (acc, value) =>
       acc |+| BitVector(value) |+| BitVector(0) |+| BitVector(0)
@@ -61,7 +51,7 @@ object ComStmtExecute:
         BitVector(Array[Byte](0, 0, 0)) |+|
         BitVector(EnumCursorType.PARAMETER_COUNT_AVAILABLE.code) |+|
         BitVector(Array[Byte](1, 0, 0, 0)) |+|
-        nullBitmap |+|
+        nullBitmap(comStmtExecute.numParams) |+|
         BitVector(1) |+| // new_params_bind_flag,	Always 1. Malformed packet error if not 1
         types |+|
         values
