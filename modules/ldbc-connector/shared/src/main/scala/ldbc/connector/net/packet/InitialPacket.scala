@@ -11,16 +11,18 @@ import scodec.codecs.*
 
 import cats.syntax.all.*
 
+import ldbc.connector.data.*
+
 case class InitialPacket(
   protocolVersion: Int,
   serverVersion:   String,
   threadId:        Int,
-  capabilityFlags: Int,
+  capabilityFlags: Seq[CapabilitiesFlags],
   scrambleBuff:    Array[Byte],
   authPlugin:      String
 ) extends Packet:
 
-  override def toString: String = "InitialPacket"
+  override def toString: String = s"InitialPacket: ${capabilityFlags.mkString(", ")}"
 
 object InitialPacket:
 
@@ -55,7 +57,7 @@ object InitialPacket:
         protocolVersion,
         serverVersion,
         threadId,
-        capabilityFlags,
+        CapabilitiesFlags(capabilityFlags),
         authPluginDataPart1 ++ authPluginDataPart2.toArray.dropRight(1),
         authPluginName
       )
