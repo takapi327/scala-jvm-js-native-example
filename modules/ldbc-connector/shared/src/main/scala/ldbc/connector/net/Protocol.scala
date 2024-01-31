@@ -98,7 +98,7 @@ object Protocol:
         override def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]] =
           for
             columnCount <- bms.changeCommandPhase *>
-                             bms.send(ComQuery(sql)) *>
+                             bms.send(ComQuery(sql, initialPacket.capabilityFlags, Map.empty)) *>
                              bms.receive(ColumnsNumberPacket.decoder)
             columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
             resultSetRow <- readUntilEOF(columns, Nil)

@@ -14,9 +14,9 @@ import scodec.*
 import scodec.bits.*
 import scodec.interop.cats.*
 
-import ldbc.connector.data.CommandId
+import ldbc.connector.data.*
 
-case class ComQuery(sql: String) extends Message:
+case class ComQuery(sql: String, capabilityFlags: Seq[CapabilitiesFlags], params: Map[ColumnDataType, Any]) extends Message:
 
   override protected def encodeBody: Attempt[BitVector] =
     ComQuery.encoder.encode(this)
@@ -31,10 +31,31 @@ object ComQuery:
 
     val sqlBytes = comQuery.sql.getBytes("UTF-8")
 
+    val hasQueryAttributes = comQuery.capabilityFlags.contains(CapabilitiesFlags.CLIENT_QUERY_ATTRIBUTES)
+
+    val parameterCount = comQuery.params.size
+
+    val parameter = if hasQueryAttributes then
+      BitVector(comQuery.params.size) |+| BitVector(0x01)
+    else BitVector.empty
+
+    val nullBitmaps = if hasQueryAttributes && parameterCount > 0 then
+
+      val names = comQuery.params.map { (columnType, param) =>
+        val bytes = param.toString.getBytes("UTF-8")
+        BitVector(columnType.code) |+| BitVector(0x00) |+| BitVector(copyOf(bytes, bytes.length))
+      }.toList.combineAll
+
+      nullBitmap(parameterCount) |+|
+        BitVector(0x01) |+|
+        names |+| 
+        BinaryProtocolValue(comQuery.params).encode
+    else BitVector.empty
+
     Attempt.successful(
       BitVector(CommandId.COM_QUERY) |+|
-        BitVector(0x00) |+|
-        BitVector(0x01) |+|
+        parameter |+|
+        nullBitmaps |+|
         BitVector(copyOf(sqlBytes, sqlBytes.length))
     )
   }
