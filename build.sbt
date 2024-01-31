@@ -41,7 +41,7 @@ lazy val connector = crossProject(JVMPlatform, JSPlatform, NativePlatform)
   .settings(compileSettings)
   .settings(
     name        := "ldbc-connector",
-    description := "MySQL connector for native Scala",
+    description := "MySQL connector written in pure Scala3",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-core"         % "2.10.0",
       "org.typelevel" %%% "cats-effect"       % "3.5.3",
