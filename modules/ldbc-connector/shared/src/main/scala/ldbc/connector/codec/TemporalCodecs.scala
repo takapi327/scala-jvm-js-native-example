@@ -85,3 +85,5 @@ trait TemporalCodecs:
 
   val timestamp: Codec[LocalDateTime] =
     temporal(localDateTimeFormatter(6), LocalDateTime.parse, Type.timestamp)
+
+object temporal extends TemporalCodecs

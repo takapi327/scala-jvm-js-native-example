@@ -15,3 +15,5 @@ trait TextCodecs:
 
   val varchar: Codec[String] = Codec.simple(s => s, _.asRight, Type.varchar)
   def varchar(size: Int): Codec[String] = Codec.simple(s => s, _.asRight, Type.varchar(size))
+
+object text extends TextCodecs

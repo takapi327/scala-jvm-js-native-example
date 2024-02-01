@@ -22,3 +22,5 @@ trait NumericCodecs:
 
   val bigint: Codec[Long] = Codec.simple(_.toString, safe(_.toLong), Type.bigint)
   def bigint(n: Int): Codec[Long] = Codec.simple(_.toString, safe(_.toLong), Type.bigint(n))
+
+object numeric extends NumericCodecs
