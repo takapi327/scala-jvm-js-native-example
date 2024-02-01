@@ -31,13 +31,18 @@ object Main extends IOApp:
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
       for
-        preparedStatement <- session.serverPreparedStatement("SELECT * FROM example.category WHERE id = ? AND name = ?")
-        _                 <- preparedStatement.setLong(1L) *> preparedStatement.setString("Category 1")
-        result <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
+        // result <- session.executeQuery("SELECT * FROM example.category")(
+        //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
+        //            )
+        preparedStatement <- session.clientPreparedStatement(
+          "SELECT * FROM example.category WHERE p1 = ?"
+        )
+        _ <- preparedStatement.setBoolean(false) // *> preparedStatement.setString("Category 1")
+        result <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
       yield
         result.foreach {
-          case (id, name, slug, color, updatedAt, createdAt) =>
-            println(s"id: $id, name: $name, slug: $slug, color: $color, updatedAt: $updatedAt, createdAt: $createdAt")
+          case (id, name, slug, color, p1, updatedAt, createdAt) =>
+            println(s"id: $id, name: $name, slug: $slug, color: $color, p1: $p1, updatedAt: $updatedAt, createdAt: $createdAt")
         }
         ExitCode.Success
     }
