@@ -31,10 +31,7 @@ object Main extends IOApp:
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
       for
-        // result <- session.executeQuery("SELECT * FROM example.category")(
-        //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
-        //            )
-        preparedStatement <- session.preparedStatement("SELECT * FROM example.category WHERE id = ? AND name = ?")
+        preparedStatement <- session.serverPreparedStatement("SELECT * FROM example.category WHERE id = ? AND name = ?")
         _                 <- preparedStatement.setLong(1L) *> preparedStatement.setString("Category 1")
         result <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
       yield

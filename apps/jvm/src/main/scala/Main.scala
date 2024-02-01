@@ -31,10 +31,10 @@ object Main extends IOApp:
   override def run(args: List[String]): IO[ExitCode] =
     session.use { session =>
       for
-        // result <- session.executeQuery("SELECT * FROM example.category")(
+        //result <- session.executeQuery("SELECT * FROM example.category")(
         //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
         //            )
-        preparedStatement <- session.preparedStatement("SELECT * FROM example.category WHERE id = ? AND name = ?")
+        preparedStatement <- session.serverPreparedStatement("SELECT * FROM example.category WHERE id = ? AND name = ?")
         _                 <- preparedStatement.setLong(1L) *> preparedStatement.setString("Category 1")
         result <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
       yield
@@ -61,12 +61,11 @@ object JDBC:
       .Manager { use =>
         val connection: JdbcConnection = use(dataSource.getConnection.asInstanceOf[JdbcConnection])
         // val statement = use(connection.prepareStatement("SELECT * FROM example.category WHERE name = ?"))
-        // val statement = use(ServerPreparedStatement.getInstance(connection, "SELECT * FROM example.category WHERE name = ?", "example", 0, 0))
-        val statement = connection.serverPrepareStatement("SELECT * FROM example.category WHERE id = ? AND slug = ?")
-        // val statement = use(connection.createStatement())
-        statement.setLong(1, 1L)
-        statement.setString(2, "foo")
-        val resultSet = use(statement.executeQuery())
+        // val statement = connection.serverPrepareStatement("SELECT * FROM example.category WHERE id = ? AND slug = ?")
+        val statement = use(connection.createStatement())
+        // statement.setLong(1, 1L)
+        // statement.setString(2, "foo")
+        val resultSet = use(statement.executeQuery("SELECT * FROM example.category WHERE id = 1 AND slug = 'foo'"))
         // val resultSet = use(statement.executeQuery("SELECT * FROM example.category WHERE name = 'foo'"))
         val records = List.newBuilder[(Long, String, String, Short, java.sql.Timestamp, java.sql.Timestamp)]
         while resultSet.next() do {
