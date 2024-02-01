@@ -18,7 +18,7 @@ import ldbc.connector.data.CapabilitiesFlags
 trait PreparedStatement[F[_]: Concurrent]:
 
   def bms:         BufferedMessageSocket[F]
-  def params:      Ref[F, Map[Int, Long | String]]
+  def params:      Ref[F, Map[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]]
 
   def setNull(): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_NULL -> None))
@@ -33,7 +33,7 @@ trait PreparedStatement[F[_]: Concurrent]:
     params.update(_ + (DataType.MYSQL_TYPE_SHORT -> value))
     
   def setInt(value: Int): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_LONG -> value))
+    params.update(_ + (DataType.MYSQL_TYPE_INT24 -> value))
   
   def setLong(value: Long): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_LONGLONG -> value))
@@ -87,11 +87,11 @@ object PreparedStatement:
   case class Client[F[_]: Concurrent](
     bms:         BufferedMessageSocket[F],
     sql:         String,
-    params:      Ref[F, Map[Int, Long | String]],
+    params:      Ref[F, Map[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]],
     capabilityFlags: Seq[CapabilitiesFlags]
   ) extends PreparedStatement[F]:
 
-    private def buildQuery(params: Map[Long | String, Int]): String =
+    private def buildQuery(params: Map[None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime, Int]): String =
       val query = sql.toCharArray
       params.foldLeft(query) { case (query, (value, offset)) =>
         val index = query.indexOf('?', offset)
@@ -100,8 +100,11 @@ object PreparedStatement:
           val (head, tail) = query.splitAt(index)
           val (tailHead, tailTail) = tail.splitAt(1)
           val newValue = value match
+            case None     => "NULL".toCharArray
+            case v: Boolean => v.toString.toCharArray
             case v: Long   => v.toString.toCharArray
             case v: String => "'".toCharArray ++ v.toCharArray ++ "'".toCharArray
+            case _        => throw new IllegalArgumentException("Unsupported type")
           head ++ newValue ++ tailTail
       }.mkString
 
@@ -133,7 +136,7 @@ object PreparedStatement:
     statementId: Long,
     numParams:   Int,
     bms:         BufferedMessageSocket[F],
-    params:      Ref[F, Map[Int, Long | String]]
+    params:      Ref[F, Map[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]]
   ) extends PreparedStatement[F]:
 
     override def executeQuery[A](codec: ldbc.connector.Codec[A]): F[List[A]] =

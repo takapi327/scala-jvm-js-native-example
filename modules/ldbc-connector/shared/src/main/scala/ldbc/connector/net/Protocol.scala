@@ -121,7 +121,7 @@ object Protocol:
             )
 
         override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
-          Ref[F].of(Map.empty[Int, Long | String]).map(params =>
+          Ref[F].of(Map.empty[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]).map(params =>
             PreparedStatement.Client[F](bms, sql, params, initialPacket.capabilityFlags)
           )
 
@@ -134,7 +134,7 @@ object Protocol:
                         }
             _      <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
             _      <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
-            params <- Ref[F].of(Map.empty[Int, Long | String])
+            params <- Ref[F].of(Map.empty[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime])
           yield PreparedStatement.Server[F](result.statementId, result.numParams, bms, params)
 
         override def close(): F[Unit] = bms.changeCommandPhase *> bms.send(ComQuit())
