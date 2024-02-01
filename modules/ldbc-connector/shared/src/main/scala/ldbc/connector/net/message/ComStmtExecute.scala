@@ -18,7 +18,7 @@ import scodec.interop.cats.*
 import ldbc.connector.data.*
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
-case class ComStmtExecute(statementId: Long, numParams: Int, params: Map[Int, Long | String]) extends Message:
+case class ComStmtExecute(statementId: Long, numParams: Int, params: Map[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]) extends Message:
 
   override protected def encodeBody: Attempt[BitVector] =
     ComStmtExecute.encoder.encode(this)
@@ -37,11 +37,13 @@ object ComStmtExecute:
 
     val values = comStmtExecute.params.values.foldLeft(BitVector.empty) { (acc, value) =>
       acc |+| (value match
+        case boolean: Boolean => uint8L.encode(if boolean then 1 else 0).require
         case str: String =>
           val bytes = str.getBytes("UTF-8")
           BitVector(bytes.length) |+|
             BitVector(copyOf(bytes, bytes.length))
         case long: Long => int64L.encode(long).require
+        case _ => throw new RuntimeException("Not implemented yet")
       )
     }
 
