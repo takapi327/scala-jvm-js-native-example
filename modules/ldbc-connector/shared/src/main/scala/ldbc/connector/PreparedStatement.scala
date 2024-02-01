@@ -20,11 +20,47 @@ trait PreparedStatement[F[_]: Concurrent]:
   def bms:         BufferedMessageSocket[F]
   def params:      Ref[F, Map[Int, Long | String]]
 
+  def setNull(): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_NULL -> None))
+    
+  def setBoolean(value: Boolean): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_TINY -> value))
+    
+  def setByte(value: Byte): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_TINY -> value))
+
+  def setShort(value: Short): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_SHORT -> value))
+    
+  def setInt(value: Int): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_LONG -> value))
+  
   def setLong(value: Long): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_LONGLONG -> value))
+    
+  def setFloat(value: Float): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_FLOAT -> value))
+    
+  def setDouble(value: Double): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_DOUBLE -> value))
+    
+  def setBigDecimal(value: BigDecimal): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_NEWDECIMAL -> value))
 
   def setString(value: String): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
+    
+  def setBytes(value: Array[Byte]): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
+    
+  def setDate(value: java.time.LocalDate): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_DATE -> value))
+    
+  def setTime(value: java.time.LocalTime): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_TIME -> value))
+    
+  def setTimestamp(value: java.time.LocalDateTime): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_TIMESTAMP -> value))
 
   protected def repeatProcess[P <: Packet](times: Int, decoder: scodec.Decoder[P]): F[List[P]] =
     def read(remaining: Int, acc: List[P]): F[List[P]] =
