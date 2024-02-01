@@ -6,6 +6,6 @@
 
 package ldbc.connector.codec
 
-trait AllCodecs extends NumericCodecs, TextCodecs, TemporalCodecs
+trait AllCodecs extends BooleanCodec, NumericCodecs, TextCodecs, TemporalCodecs
 
 object all extends AllCodecs
