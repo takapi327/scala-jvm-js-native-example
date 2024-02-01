@@ -39,7 +39,9 @@ trait Protocol[F[_]]:
 
   def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]]
 
-  def preparedStatement(sql: String): F[PreparedStatement[F]]
+  def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]]
+
+  def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]]
 
   def close(): F[Unit]
 
@@ -118,7 +120,12 @@ object Protocol:
                 case Right(value) => value
             )
 
-        override def preparedStatement(sql: String): F[PreparedStatement[F]] =
+        override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
+          Ref[F].of(Map.empty[Int, Long | String]).map(params =>
+            PreparedStatement.Client[F](bms, sql, params, initialPacket.capabilityFlags)
+          )
+
+        override def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]] =
           for
             result <- bms.changeCommandPhase *> bms.send(ComStmtPrepare(sql)) *>
                         bms.receive(ComStmtPrepareOkPacket.decoder).flatMap {
@@ -128,7 +135,7 @@ object Protocol:
             _      <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
             _      <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
             params <- Ref[F].of(Map.empty[Int, Long | String])
-          yield PreparedStatement(result.statementId, result.numParams, bms, params)
+          yield PreparedStatement.Server[F](result.statementId, result.numParams, bms, params)
 
         override def close(): F[Unit] = bms.changeCommandPhase *> bms.send(ComQuit())
     }

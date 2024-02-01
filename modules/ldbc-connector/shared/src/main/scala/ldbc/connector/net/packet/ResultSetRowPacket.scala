@@ -23,9 +23,10 @@ object ResultSetRowPacket:
       .map(_.decodeUtf8Lenient)
       .map(value => if value.toUpperCase == "NULL" then None else value.some)
 
-  def decoder(columns: Seq[ColumnDefinitionPacket]): Decoder[ResultSetRowPacket | EOFPacket] =
+  def decoder(columns: Seq[ColumnDefinitionPacket]): Decoder[ResultSetRowPacket | EOFPacket | ERRPacket] =
     uint8.flatMap {
       case EOFPacket.STATUS => EOFPacket.decoder
+      case ERRPacket.STATUS => ERRPacket.decoder
       case length =>
         columns.zipWithIndex.toList
           .traverse((_, index) =>
