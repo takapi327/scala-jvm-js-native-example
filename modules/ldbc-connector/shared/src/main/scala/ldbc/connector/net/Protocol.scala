@@ -121,9 +121,15 @@ object Protocol:
             )
 
         override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
-          Ref[F].of(Map.empty[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]).map(params =>
-            PreparedStatement.Client[F](bms, sql, params, initialPacket.capabilityFlags)
-          )
+          Ref[F]
+            .of(
+              Map.empty[
+                Int,
+                None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
+                  java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
+              ]
+            )
+            .map(params => PreparedStatement.Client[F](bms, sql, params, initialPacket.capabilityFlags))
 
         override def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]] =
           for
@@ -132,9 +138,15 @@ object Protocol:
                           case _: ERRPacket => Concurrent[F].raiseError(new Exception("Failed to prepare statement"))
                           case result: ComStmtPrepareOkPacket => Concurrent[F].pure(result)
                         }
-            _      <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
-            _      <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
-            params <- Ref[F].of(Map.empty[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime])
+            _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
+            _ <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
+            params <- Ref[F].of(
+                        Map.empty[
+                          Int,
+                          None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String |
+                            Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
+                        ]
+                      )
           yield PreparedStatement.Server[F](result.statementId, result.numParams, bms, params)
 
         override def close(): F[Unit] = bms.changeCommandPhase *> bms.send(ComQuit())

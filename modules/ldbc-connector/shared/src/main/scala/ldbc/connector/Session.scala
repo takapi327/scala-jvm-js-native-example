@@ -118,8 +118,10 @@ object Session:
       override def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]] =
         protocol.executeQuery(sql)(codec)
 
-      override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] = protocol.clientPreparedStatement(sql)
-      override def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]] = protocol.serverPreparedStatement(sql)
+      override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
+        protocol.clientPreparedStatement(sql)
+      override def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]] =
+        protocol.serverPreparedStatement(sql)
 
   def fromSocketGroup[F[_]: Tracer: Console](
     socketGroup:   SocketGroup[F],

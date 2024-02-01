@@ -17,48 +17,55 @@ import ldbc.connector.data.CapabilitiesFlags
 
 trait PreparedStatement[F[_]: Concurrent]:
 
-  def bms:         BufferedMessageSocket[F]
-  def params:      Ref[F, Map[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]]
+  def bms: BufferedMessageSocket[F]
+  def params: Ref[
+    F,
+    Map[
+      Int,
+      None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
+        java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
+    ]
+  ]
 
   def setNull(): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_NULL -> None))
-    
+
   def setBoolean(value: Boolean): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_TINY -> value))
-    
+
   def setByte(value: Byte): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_TINY -> value))
 
   def setShort(value: Short): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_SHORT -> value))
-    
+
   def setInt(value: Int): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_INT24 -> value))
-  
+
   def setLong(value: Long): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_LONGLONG -> value))
-    
+
   def setFloat(value: Float): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_FLOAT -> value))
-    
+
   def setDouble(value: Double): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_DOUBLE -> value))
-    
+
   def setBigDecimal(value: BigDecimal): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_NEWDECIMAL -> value))
 
   def setString(value: String): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
-    
+
   def setBytes(value: Array[Byte]): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
-    
+
   def setDate(value: java.time.LocalDate): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_DATE -> value))
-    
+
   def setTime(value: java.time.LocalTime): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_TIME -> value))
-    
+
   def setTimestamp(value: java.time.LocalDateTime): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_TIMESTAMP -> value))
 
@@ -72,12 +79,12 @@ trait PreparedStatement[F[_]: Concurrent]:
   protected def readUntilEOF[P <: Packet](
     columns: List[ColumnDefinitionPacket],
     decoder: List[ColumnDefinitionPacket] => scodec.Decoder[P | EOFPacket | ERRPacket],
-    acc: List[P]
+    acc:     List[P]
   ): F[List[P]] =
     bms.receive(decoder(columns)).flatMap {
       case _: EOFPacket => Concurrent[F].pure(acc)
       case _: ERRPacket => Concurrent[F].raiseError(new RuntimeException("Error packet received"))
-      case row => readUntilEOF(columns, decoder, acc :+ row.asInstanceOf[P])
+      case row          => readUntilEOF(columns, decoder, acc :+ row.asInstanceOf[P])
     }
 
   def executeQuery[A](codec: ldbc.connector.Codec[A]): F[List[A]]
@@ -85,35 +92,51 @@ trait PreparedStatement[F[_]: Concurrent]:
 object PreparedStatement:
 
   case class Client[F[_]: Concurrent](
-    bms:         BufferedMessageSocket[F],
-    sql:         String,
-    params:      Ref[F, Map[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]],
+    bms: BufferedMessageSocket[F],
+    sql: String,
+    params: Ref[
+      F,
+      Map[
+        Int,
+        None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
+          java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
+      ]
+    ],
     capabilityFlags: Seq[CapabilitiesFlags]
   ) extends PreparedStatement[F]:
 
-    private def buildQuery(params: Map[None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime, Int]): String =
+    private def buildQuery(
+      params: Map[
+        None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
+          java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime,
+        Int
+      ]
+    ): String =
       val query = sql.toCharArray
-      params.foldLeft(query) { case (query, (value, offset)) =>
-        val index = query.indexOf('?', offset)
-        if index < 0 then query
-        else
-          val (head, tail) = query.splitAt(index)
-          val (tailHead, tailTail) = tail.splitAt(1)
-          val newValue = value match
-            case None     => "NULL".toCharArray
-            case v: Boolean => v.toString.toCharArray
-            case v: Long   => v.toString.toCharArray
-            case v: String => "'".toCharArray ++ v.toCharArray ++ "'".toCharArray
-            case _        => throw new IllegalArgumentException("Unsupported type")
-          head ++ newValue ++ tailTail
-      }.mkString
+      params
+        .foldLeft(query) {
+          case (query, (value, offset)) =>
+            val index = query.indexOf('?', offset)
+            if index < 0 then query
+            else
+              val (head, tail)         = query.splitAt(index)
+              val (tailHead, tailTail) = tail.splitAt(1)
+              val newValue = value match
+                case None       => "NULL".toCharArray
+                case v: Boolean => v.toString.toCharArray
+                case v: Long    => v.toString.toCharArray
+                case v: String  => "'".toCharArray ++ v.toCharArray ++ "'".toCharArray
+                case _          => throw new IllegalArgumentException("Unsupported type")
+              head ++ newValue ++ tailTail
+        }
+        .mkString
 
     override def executeQuery[A](codec: ldbc.connector.Codec[A]): F[List[A]] =
       for
         params <- params.get
         columnCount <- bms.changeCommandPhase *>
-          bms.send(ComQuery(buildQuery(params.values.zipWithIndex.toMap), capabilityFlags, Map.empty)) *>
-          bms.receive(ColumnsNumberPacket.decoder)
+                         bms.send(ComQuery(buildQuery(params.values.zipWithIndex.toMap), capabilityFlags, Map.empty)) *>
+                         bms.receive(ColumnsNumberPacket.decoder)
         columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
         resultSetRow <- readUntilEOF[ResultSetRowPacket](columns, ResultSetRowPacket.decoder, Nil)
       yield resultSetRow
@@ -136,21 +159,29 @@ object PreparedStatement:
     statementId: Long,
     numParams:   Int,
     bms:         BufferedMessageSocket[F],
-    params:      Ref[F, Map[Int, None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime]]
+    params: Ref[
+      F,
+      Map[
+        Int,
+        None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
+          java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
+      ]
+    ]
   ) extends PreparedStatement[F]:
 
     override def executeQuery[A](codec: ldbc.connector.Codec[A]): F[List[A]] =
       for
         params <- params.get
         columnCount <- bms.changeCommandPhase *> bms.send(
-          ComStmtExecute(
-            statementId,
-            numParams,
-            params
-          )
-        ) *> bms.receive(ColumnsNumberPacket.decoder)
-        columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
-        resultSetRow <- readUntilEOF[BinaryProtocolResultSetRowPacket](columns, BinaryProtocolResultSetRowPacket.decoder, Nil)
+                         ComStmtExecute(
+                           statementId,
+                           numParams,
+                           params
+                         )
+                       ) *> bms.receive(ColumnsNumberPacket.decoder)
+        columns <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
+        resultSetRow <-
+          readUntilEOF[BinaryProtocolResultSetRowPacket](columns, BinaryProtocolResultSetRowPacket.decoder, Nil)
       yield resultSetRow.map(row =>
         codec.decode(0, row.value) match
           case Left(value) =>
