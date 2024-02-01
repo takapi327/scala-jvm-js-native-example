@@ -34,8 +34,8 @@ object Main extends IOApp:
         //result <- session.executeQuery("SELECT * FROM example.category")(
         //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
         //            )
-        preparedStatement <- session.serverPreparedStatement("SELECT * FROM example.category WHERE id = ? AND name = ?")
-        _                 <- preparedStatement.setLong(1L) *> preparedStatement.setString("Category 1")
+        preparedStatement <- session.clientPreparedStatement("SELECT id, name, slug, color, updated_at, created_at FROM example.category WHERE p1 = ?")
+        _                 <- preparedStatement.setBoolean(false)// *> preparedStatement.setString("Category 1")
         result <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp)
       yield
         result.foreach {
