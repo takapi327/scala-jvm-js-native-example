@@ -16,7 +16,7 @@ object Type:
   given EqType: Eq[Type] = Eq.fromUniversalEquals
 
   val boolean: Type = Type("boolean")
-  
+
   // @deprecated("Use Type.int instead", "0.1.0")
   def tinyint(n: Int): Type = Type(s"tinyint($n)")
   val tinyint: Type = Type("tinyint")

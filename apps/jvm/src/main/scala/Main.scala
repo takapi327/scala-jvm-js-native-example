@@ -37,12 +37,15 @@ object Main extends IOApp:
         preparedStatement <- session.clientPreparedStatement(
                                "SELECT * FROM example.category WHERE p1 = ?"
                              )
-        _      <- preparedStatement.setBoolean(false) // *> preparedStatement.setString("Category 1")
-        result <- preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
+        _ <- preparedStatement.setBoolean(false) // *> preparedStatement.setString("Category 1")
+        result <-
+          preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
       yield
         result.foreach {
           case (id, name, slug, color, p1, updatedAt, createdAt) =>
-            println(s"id: $id, name: $name, slug: $slug, color: $color, p1: $p1, updatedAt: $updatedAt, createdAt: $createdAt")
+            println(
+              s"id: $id, name: $name, slug: $slug, color: $color, p1: $p1, updatedAt: $updatedAt, createdAt: $createdAt"
+            )
         }
         ExitCode.Success
     }

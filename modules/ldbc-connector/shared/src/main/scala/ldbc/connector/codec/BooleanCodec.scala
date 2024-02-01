@@ -10,14 +10,14 @@ import ldbc.connector.Codec
 import ldbc.connector.data.Type
 
 trait BooleanCodec:
-  
+
   val boolean: Codec[Boolean] = Codec.simple(
     _.toString,
     {
-      case "true" | "1" => Right(true)
+      case "true" | "1"  => Right(true)
       case "false" | "0" => Right(false)
-      case unknown => Left(s"Invalid boolean value: $unknown")
-    }, 
+      case unknown       => Left(s"Invalid boolean value: $unknown")
+    },
     Type.boolean
   )
 
