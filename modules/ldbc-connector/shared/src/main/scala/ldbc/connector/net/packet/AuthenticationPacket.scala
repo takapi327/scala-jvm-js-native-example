@@ -20,4 +20,5 @@ object AuthenticationPacket:
       (status: @switch) match
         case AuthMoreDataPacket.STATUS => AuthMoreDataPacket.decoder
         case OKPacket.STATUS           => OKPacket.decoder
+        case ERRPacket.STATUS          => ERRPacket.decoder
     }

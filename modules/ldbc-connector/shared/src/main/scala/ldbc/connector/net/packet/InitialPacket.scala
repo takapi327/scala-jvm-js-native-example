@@ -22,7 +22,7 @@ case class InitialPacket(
   authPlugin:      String
 ) extends Packet:
 
-  override def toString: String = s"InitialPacket: ${ capabilityFlags.mkString(", ") }"
+  override def toString: String = "InitialPacket"
 
 object InitialPacket:
 
