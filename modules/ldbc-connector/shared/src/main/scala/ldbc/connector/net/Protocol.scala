@@ -67,14 +67,15 @@ object Protocol:
     Exchange[F].map { ex =>
       new Protocol[F]:
         override def initialPacket: InitialPacket = bms.initialPacket
-        
+
         private def readUntilOk(): F[Unit] =
           bms.receive(AuthenticationPacket.decoder).flatMap {
             case _: AuthMoreDataPacket => readUntilOk()
-            case _: OKPacket => Concurrent[F].unit
-            case error: ERRPacket => Concurrent[F].raiseError(new Exception(s"Connection error: ${error.errorMessage}"))
+            case _: OKPacket           => Concurrent[F].unit
+            case error: ERRPacket =>
+              Concurrent[F].raiseError(new Exception(s"Connection error: ${ error.errorMessage }"))
           }
-    
+
         override def authenticate(user: String, password: String): F[Unit] =
           val plugin = initialPacket.authPlugin match
             case "mysql_native_password" => new MysqlNativePasswordPlugin
