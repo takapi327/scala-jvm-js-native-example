@@ -34,10 +34,13 @@ object Main extends IOApp:
         // result <- session.executeQuery("SELECT * FROM example.category")(
         //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
         //            )
-        preparedStatement <- session.clientPreparedStatement(
-                               "SELECT * FROM example.category WHERE p1 = ?"
-                             )
-        _ <- preparedStatement.setBoolean(false) // *> preparedStatement.setString("Category 1")
+        preparedStatement <-
+          session.serverPreparedStatement(
+            "SELECT id, name, slug, color, p1, updated_at, created_at FROM example.category WHERE date <= ?"
+          )
+        _ <- preparedStatement.setDate(
+               java.time.LocalDate.of(2024, 10, 13)
+             ) // *> preparedStatement.setString("Category 1")
         result <-
           preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
       yield
