@@ -67,6 +67,15 @@ object Protocol:
     Exchange[F].map { ex =>
       new Protocol[F]:
         override def initialPacket: InitialPacket = bms.initialPacket
+
+        private def readUntilOk(): F[Unit] =
+          bms.receive(AuthenticationPacket.decoder).flatMap {
+            case _: AuthMoreDataPacket => readUntilOk()
+            case _: OKPacket           => Concurrent[F].unit
+            case error: ERRPacket =>
+              Concurrent[F].raiseError(new Exception(s"Connection error: ${ error.errorMessage }"))
+          }
+
         override def authenticate(user: String, password: String): F[Unit] =
           val plugin = initialPacket.authPlugin match
             case "mysql_native_password" => new MysqlNativePasswordPlugin
@@ -77,9 +86,7 @@ object Protocol:
 
           val authentication = Authenticate(user, Array(hashedPassword.length.toByte) ++ hashedPassword, plugin.name)
 
-          bms.send(authentication) <* bms.receive(AuthenticationPacket.decoder).flatMap {
-            case res: AuthMoreDataPacket => bms.receive(AuthenticationPacket.decoder)
-          }
+          bms.send(authentication) <* readUntilOk()
 
         def repeatProcess[P <: Packet](times: Int, decoder: Decoder[P]): F[List[P]] =
           def read(remaining: Int, acc: List[P]): F[List[P]] =
