@@ -122,23 +122,23 @@ object PreparedStatement:
               val (head, tail)         = query.splitAt(index)
               val (tailHead, tailTail) = tail.splitAt(1)
               val newValue = value match
-                case None       => "NULL".toCharArray
-                case v: Boolean => v.toString.toCharArray
-                case v: Byte    => v.toString.toCharArray
-                case v: Short   => v.toString.toCharArray
-                case v: Int     => v.toString.toCharArray
-                case v: Long    => v.toString.toCharArray
-                case v: Float   => v.toString.toCharArray
-                case v: Double  => v.toString.toCharArray
+                case None          => "NULL".toCharArray
+                case v: Boolean    => v.toString.toCharArray
+                case v: Byte       => v.toString.toCharArray
+                case v: Short      => v.toString.toCharArray
+                case v: Int        => v.toString.toCharArray
+                case v: Long       => v.toString.toCharArray
+                case v: Float      => v.toString.toCharArray
+                case v: Double     => v.toString.toCharArray
                 case v: BigDecimal => v.toString.toCharArray
-                case v: String  => "'".toCharArray ++ v.toCharArray ++ "'".toCharArray
+                case v: String     => "'".toCharArray ++ v.toCharArray ++ "'".toCharArray
                 case v: Array[Byte] =>
                   val hex = v.map("%02x".format(_)).mkString
                   "X'".toCharArray ++ hex.toCharArray ++ "'".toCharArray
-                case v: java.time.LocalTime => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
-                case v: java.time.LocalDate => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
+                case v: java.time.LocalTime     => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
+                case v: java.time.LocalDate     => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
                 case v: java.time.LocalDateTime => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
-                //case _          => throw new IllegalArgumentException("Unsupported type")
+                // case _          => throw new IllegalArgumentException("Unsupported type")
               head ++ newValue ++ tailTail
         }
         .mkString
@@ -149,7 +149,9 @@ object PreparedStatement:
         columnCount <- bms.changeCommandPhase *>
                          bms.send(ComQuery(buildQuery(params.values.zipWithIndex.toMap), capabilityFlags, Map.empty)) *>
                          bms.receive(ColumnsNumberPacket.decoder).flatMap {
-                           case error: ERRPacket => Concurrent[F].raiseError(new Exception(s"Failed to execute query: ${error.errorMessage}"))
+                           case error: ERRPacket =>
+                             Concurrent[F]
+                               .raiseError(new Exception(s"Failed to execute query: ${ error.errorMessage }"))
                            case result: ColumnsNumberPacket => Concurrent[F].pure(result)
                          }
         columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
@@ -194,9 +196,10 @@ object PreparedStatement:
                            params
                          )
                        ) *> bms.receive(ColumnsNumberPacket.decoder).flatMap {
-          case error: ERRPacket => Concurrent[F].raiseError(new Exception(s"Failed to execute query: ${error.errorMessage}"))
-          case result: ColumnsNumberPacket => Concurrent[F].pure(result)
-        }
+                         case error: ERRPacket =>
+                           Concurrent[F].raiseError(new Exception(s"Failed to execute query: ${ error.errorMessage }"))
+                         case result: ColumnsNumberPacket => Concurrent[F].pure(result)
+                       }
         columns <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
         resultSetRow <-
           readUntilEOF[BinaryProtocolResultSetRowPacket](columns, BinaryProtocolResultSetRowPacket.decoder, Nil)

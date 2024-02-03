@@ -16,7 +16,7 @@ case class ERRPacket(
   sqlState:       String,
   errorMessage:   String
 ) extends GenericResponsePackets:
-  
+
   override def toString: String = "ERR_Packet"
 
 object ERRPacket:

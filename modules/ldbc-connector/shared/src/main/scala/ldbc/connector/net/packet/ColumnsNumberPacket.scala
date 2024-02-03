@@ -23,5 +23,5 @@ object ColumnsNumberPacket:
     uint8.flatMap { status =>
       (status: @switch) match
         case ERRPacket.STATUS => ERRPacket.decoder
-        case value => Decoder.pure(ColumnsNumberPacket(value))
+        case value            => Decoder.pure(ColumnsNumberPacket(value))
     }
