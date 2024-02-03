@@ -33,7 +33,7 @@ object BinaryProtocolResultSetRowPacket:
       case ColumnDataType.MYSQL_TYPE_TIMESTAMP =>
         timestamp.asDecoder.map(
           _.map(timestamp =>
-            s"${ timestamp.getYear }-${ addLeadingZeroIfNeeded(timestamp.getMonthValue) }-${ timestamp.getDayOfMonth } ${ addLeadingZeroIfNeeded(
+            s"${ timestamp.getYear }-${ addLeadingZeroIfNeeded(timestamp.getMonthValue) }-${ addLeadingZeroIfNeeded(timestamp.getDayOfMonth) } ${ addLeadingZeroIfNeeded(
                 timestamp.getHour
               ) }:${ addLeadingZeroIfNeeded(timestamp.getMinute) }:${ addLeadingZeroIfNeeded(timestamp.getSecond) }.${ timestamp.getNano }"
           )
