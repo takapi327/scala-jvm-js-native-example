@@ -101,7 +101,10 @@ object Protocol:
           for
             columnCount <- bms.changeCommandPhase *>
                              bms.send(ComQuery(sql, initialPacket.capabilityFlags, Map.empty)) *>
-                             bms.receive(ColumnsNumberPacket.decoder)
+                             bms.receive(ColumnsNumberPacket.decoder).flatMap {
+                               case error: ERRPacket => Concurrent[F].raiseError(new Exception(s"Failed to execute query: ${error.errorMessage}"))
+                               case result: ColumnsNumberPacket => Concurrent[F].pure(result)
+                             }
             columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
             resultSetRow <- readUntilEOF(columns, Nil)
           yield resultSetRow

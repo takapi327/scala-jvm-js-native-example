@@ -40,7 +40,7 @@ trait PreparedStatement[F[_]: Concurrent]:
     params.update(_ + (DataType.MYSQL_TYPE_SHORT -> value))
 
   def setInt(value: Int): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_INT24 -> value))
+    params.update(_ + (DataType.MYSQL_TYPE_LONG -> value))
 
   def setLong(value: Long): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_LONGLONG -> value))
@@ -60,11 +60,11 @@ trait PreparedStatement[F[_]: Concurrent]:
   def setBytes(value: Array[Byte]): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
 
-  def setDate(value: java.time.LocalDate): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_DATE -> value))
-
   def setTime(value: java.time.LocalTime): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_TIME -> value))
+
+  def setDate(value: java.time.LocalDate): F[Unit] =
+    params.update(_ + (DataType.MYSQL_TYPE_DATE -> value))
 
   def setTimestamp(value: java.time.LocalDateTime): F[Unit] =
     params.update(_ + (DataType.MYSQL_TYPE_TIMESTAMP -> value))
@@ -124,9 +124,21 @@ object PreparedStatement:
               val newValue = value match
                 case None       => "NULL".toCharArray
                 case v: Boolean => v.toString.toCharArray
+                case v: Byte    => v.toString.toCharArray
+                case v: Short   => v.toString.toCharArray
+                case v: Int     => v.toString.toCharArray
                 case v: Long    => v.toString.toCharArray
+                case v: Float   => v.toString.toCharArray
+                case v: Double  => v.toString.toCharArray
+                case v: BigDecimal => v.toString.toCharArray
                 case v: String  => "'".toCharArray ++ v.toCharArray ++ "'".toCharArray
-                case _          => throw new IllegalArgumentException("Unsupported type")
+                case v: Array[Byte] =>
+                  val hex = v.map("%02x".format(_)).mkString
+                  "X'".toCharArray ++ hex.toCharArray ++ "'".toCharArray
+                case v: java.time.LocalTime => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
+                case v: java.time.LocalDate => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
+                case v: java.time.LocalDateTime => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
+                //case _          => throw new IllegalArgumentException("Unsupported type")
               head ++ newValue ++ tailTail
         }
         .mkString
@@ -136,7 +148,10 @@ object PreparedStatement:
         params <- params.get
         columnCount <- bms.changeCommandPhase *>
                          bms.send(ComQuery(buildQuery(params.values.zipWithIndex.toMap), capabilityFlags, Map.empty)) *>
-                         bms.receive(ColumnsNumberPacket.decoder)
+                         bms.receive(ColumnsNumberPacket.decoder).flatMap {
+                           case error: ERRPacket => Concurrent[F].raiseError(new Exception(s"Failed to execute query: ${error.errorMessage}"))
+                           case result: ColumnsNumberPacket => Concurrent[F].pure(result)
+                         }
         columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
         resultSetRow <- readUntilEOF[ResultSetRowPacket](columns, ResultSetRowPacket.decoder, Nil)
       yield resultSetRow
@@ -178,7 +193,10 @@ object PreparedStatement:
                            numParams,
                            params
                          )
-                       ) *> bms.receive(ColumnsNumberPacket.decoder)
+                       ) *> bms.receive(ColumnsNumberPacket.decoder).flatMap {
+          case error: ERRPacket => Concurrent[F].raiseError(new Exception(s"Failed to execute query: ${error.errorMessage}"))
+          case result: ColumnsNumberPacket => Concurrent[F].pure(result)
+        }
         columns <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
         resultSetRow <-
           readUntilEOF[BinaryProtocolResultSetRowPacket](columns, BinaryProtocolResultSetRowPacket.decoder, Nil)
