@@ -12,10 +12,12 @@ import scodec.codecs.*
 case class ERRPacket(
   status:         Int,
   errorCode:      Int,
-  sqlStateMarker: String,
+  sqlStateMarker: Int,
   sqlState:       String,
   errorMessage:   String
-) extends GenericResponsePackets
+) extends GenericResponsePackets:
+  
+  override def toString: String = "ERR_Packet"
 
 object ERRPacket:
 
@@ -23,15 +25,14 @@ object ERRPacket:
 
   val decoder: Decoder[ERRPacket] =
     for
-      status         <- uint4
-      errorCode      <- uint2
-      sqlStateMarker <- bytes(1)
+      errorCode      <- uint16L
+      sqlStateMarker <- uint8
       sqlState       <- bytes(5)
-      errorMessage   <- variableSizeBytes(uint8, utf8)
+      errorMessage   <- bytes
     yield ERRPacket(
-      status,
+      STATUS,
       errorCode,
-      sqlStateMarker.decodeUtf8.toOption.get,
-      sqlState.decodeUtf8.toOption.get,
-      errorMessage
+      sqlStateMarker,
+      sqlState.decodeUtf8Lenient,
+      errorMessage.decodeUtf8Lenient
     )
