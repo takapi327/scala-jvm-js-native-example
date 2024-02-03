@@ -6,6 +6,8 @@
 
 package ldbc.connector.net.packet
 
+import scala.annotation.switch
+
 import scodec.*
 import scodec.codecs.*
 
@@ -17,4 +19,9 @@ case class ColumnsNumberPacket(
 
 object ColumnsNumberPacket:
 
-  val decoder: Decoder[ColumnsNumberPacket] = uint8.map(ColumnsNumberPacket(_))
+  val decoder: Decoder[ColumnsNumberPacket | ERRPacket] =
+    uint8.flatMap { status =>
+      (status: @switch) match
+        case ERRPacket.STATUS => ERRPacket.decoder
+        case value => Decoder.pure(ColumnsNumberPacket(value))
+    }
