@@ -37,6 +37,13 @@ case class ComStmtExecute(
 
 object ComStmtExecute:
 
+  private def zerofill(value: Int): Attempt[BitVector] = if value.toString.length == 1 then
+    for
+      fill <- uint32L.encode(0)
+      int <- uint32L.encode(value)
+    yield fill |+| int
+  else uint32L.encode(value)
+
   val encoder: Encoder[ComStmtExecute] = Encoder { comStmtExecute =>
 
     val types = comStmtExecute.params.keys.foldLeft(BitVector.empty) { (acc, value) =>
@@ -46,11 +53,104 @@ object ComStmtExecute:
     val values = comStmtExecute.params.values.foldLeft(BitVector.empty) { (acc, value) =>
       acc |+| (value match
         case boolean: Boolean => uint8L.encode(if boolean then 1 else 0).require
+        case byte: Byte       => uint8L.encode(byte).require
+        case short: Short     => uint16L.encode(short).require
+        case int: Int         => uint32L.encode(int).require
+        case long: Long       => int64L.encode(long).require
+        case f: Float     => float.encode(f).require
+        case d: Double   => double.encode(d).require
+        case bd: BigDecimal =>
+          val bytes = bd.bigDecimal.unscaledValue.toByteArray
+          BitVector(bytes.length) |+|
+            BitVector(copyOf(bytes, bytes.length))
         case str: String =>
           val bytes = str.getBytes("UTF-8")
           BitVector(bytes.length) |+|
             BitVector(copyOf(bytes, bytes.length))
-        case long: Long => int64L.encode(long).require
+        case bytes: Array[Byte] =>
+          BitVector(bytes.length) |+|
+            BitVector(copyOf(bytes, bytes.length))
+        case localTime: java.time.LocalTime =>
+          val hour = localTime.getHour
+          val minute = localTime.getMinute
+          val second = localTime.getSecond
+          val nano = localTime.getNano
+          (hour, minute, second, nano) match
+            case (0, 0, 0, 0) => BitVector(0)
+            case (_, _, _, 0) =>
+              (for
+                length <- uint32L.encode(8)
+                hour <- uint32L.encode(hour)
+                minute <- uint32L.encode(minute)
+                second <- uint32L.encode(second)
+              yield length |+| hour |+| minute |+| second).require
+            case _ =>
+              (for
+                length <- uint32L.encode(12)
+                hour <- uint32L.encode(hour)
+                minute <- uint32L.encode(minute)
+                second <- uint32L.encode(second)
+                nano <- uint32L.encode(nano)
+              yield length |+| hour |+| minute |+| second |+| nano).require
+        case localDate: java.time.LocalDate =>
+          //val bytes = localDate.toString.getBytes("UTF-8")
+          //  BitVector(bytes.length) |+|
+          //    BitVector(copyOf(bytes, bytes.length))
+          val year = localDate.getYear
+          val month = localDate.getMonthValue
+          val day = localDate.getDayOfMonth
+          (year, month, day) match
+            case (0, 0, 0) => BitVector(0)
+            case _ =>
+              (for
+                length <- uint32L.encode(4)
+                year <- uint32L.encode(year)
+                month <- zerofill(month)
+                day <- zerofill(day)
+              yield length |+| year |+| month |+| day).require
+        case localDateTime: java.time.LocalDateTime =>
+          val bytes = localDateTime.toString.replace("T", " ").getBytes("UTF-8")
+            BitVector(bytes.length) |+|
+              BitVector(copyOf(bytes, bytes.length))
+          /*
+          val year = localDateTime.getYear
+          val month = localDateTime.getMonthValue
+          val day = localDateTime.getDayOfMonth
+          val hour = localDateTime.getHour
+          val minute = localDateTime.getMinute
+          val second = localDateTime.getSecond
+          val nano = localDateTime.getNano
+          (year, month, day, hour, minute, second, nano) match
+            case (0, 0, 0, 0, 0, 0, 0) => BitVector(0)
+            case (_, _, _, 0, 0, 0, 0) =>
+              (for
+                length <- uint32L.encode(4)
+                year <- uint32L.encode(year)
+                month <- zerofill(month)
+                day <- zerofill(day)
+              yield length |+| year |+| month |+| day).require
+            case (_, _, _, _, _, _, 0) =>
+              (for
+                length <- uint32L.encode(7)
+                year <- uint32L.encode(year)
+                month <- zerofill(month)
+                day <- zerofill(day)
+                hour <- uint32L.encode(hour)
+                minute <- uint32L.encode(minute)
+                second <- uint32L.encode(second)
+              yield length |+| year |+| month |+| day |+| hour |+| minute |+| second).require
+            case _ =>
+              (for
+                length <- uint32L.encode(11)
+                year <- uint32L.encode(year)
+                month <- zerofill(month)
+                day <- zerofill(day)
+                hour <- uint32L.encode(hour)
+                minute <- uint32L.encode(minute)
+                second <- uint32L.encode(second)
+                nano <- uint32L.encode(nano)
+              yield length |+| year |+| month |+| day |+| hour |+| minute |+| second |+| nano).require
+           */
         case _          => throw new RuntimeException("Not implemented yet")
       )
     }
