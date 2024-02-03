@@ -99,42 +99,42 @@ object ComStmtExecute:
                 day    <- uint8L.encode(day)
               yield length |+| year |+| month |+| day).require
         case localDateTime: java.time.LocalDateTime =>
-          val year = localDateTime.getYear
-          val month = localDateTime.getMonthValue
-          val day = localDateTime.getDayOfMonth
-          val hour = localDateTime.getHour
+          val year   = localDateTime.getYear
+          val month  = localDateTime.getMonthValue
+          val day    = localDateTime.getDayOfMonth
+          val hour   = localDateTime.getHour
           val minute = localDateTime.getMinute
           val second = localDateTime.getSecond
-          val nano = localDateTime.getNano
+          val nano   = localDateTime.getNano
           (year, month, day, hour, minute, second, nano) match
             case (0, 0, 0, 0, 0, 0, 0) => BitVector(0)
             case (_, _, _, 0, 0, 0, 0) =>
               (for
                 length <- uint8L.encode(4)
-                year <- uint16L.encode(year)
+                year   <- uint16L.encode(year)
                 month  <- uint8L.encode(month)
                 day    <- uint8L.encode(day)
               yield length |+| year |+| month |+| day).require
             case (_, _, _, _, _, _, 0) =>
               (for
                 length <- uint8L.encode(7)
-                year <- uint16L.encode(year)
+                year   <- uint16L.encode(year)
                 month  <- uint8L.encode(month)
                 day    <- uint8L.encode(day)
-                hour <- uint32L.encode(hour)
+                hour   <- uint32L.encode(hour)
                 minute <- uint32L.encode(minute)
                 second <- uint32L.encode(second)
               yield length |+| year |+| month |+| day |+| hour |+| minute |+| second).require
             case _ =>
               (for
                 length <- uint8L.encode(11)
-                year <- uint16L.encode(year)
+                year   <- uint16L.encode(year)
                 month  <- uint8L.encode(month)
                 day    <- uint8L.encode(day)
-                hour <- uint32L.encode(hour)
+                hour   <- uint32L.encode(hour)
                 minute <- uint32L.encode(minute)
                 second <- uint32L.encode(second)
-                nano <- uint32L.encode(nano)
+                nano   <- uint32L.encode(nano)
               yield length |+| year |+| month |+| day |+| hour |+| minute |+| second |+| nano).require
         case _ => throw new RuntimeException("Not implemented yet")
       )
