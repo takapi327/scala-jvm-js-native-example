@@ -6,10 +6,10 @@
 
 package ldbc.connector.net
 
-import cats.syntax.all.*
+//import cats.syntax.all.*
 
 import scodec.bits.BitVector
-import scodec.interop.cats.*
+//import scodec.interop.cats.*
 
 import ldbc.connector.data.ColumnDataType
 
@@ -26,7 +26,7 @@ package object message:
       //  else buildBitVector(index + 1, acc |+| BitVector(0))
 
       //BitVector(count) |+| buildBitVector(0, BitVector.empty)
-      BitVector(count) |+| BitVector(columns.map {
+      BitVector(columns.map {
        case ColumnDataType.MYSQL_TYPE_NULL => 1
        case _ => 1
       }.sum)

@@ -134,10 +134,12 @@ object ComStmtExecute:
               yield length |+| year |+| month |+| day |+| hour |+| minute |+| second |+| nano).require
       )
     }
+    
+    val paramCount = comStmtExecute.params.size
 
     // Flag if parameters must be re-bound
     val newParamsBindFlag =
-      if comStmtExecute.params.size == 1 && comStmtExecute.params.values.map(_.columnDataType).toSeq.contains(ColumnDataType.MYSQL_TYPE_NULL) then BitVector(0)
+      if paramCount == 1 && comStmtExecute.params.values.map(_.columnDataType).toSeq.contains(ColumnDataType.MYSQL_TYPE_NULL) then BitVector(0)
       else BitVector(1)
 
     Attempt.successful(
@@ -146,6 +148,7 @@ object ComStmtExecute:
         BitVector(Array[Byte](0, 0, 0)) |+|
         BitVector(EnumCursorType.PARAMETER_COUNT_AVAILABLE.code) |+|
         BitVector(Array[Byte](1, 0, 0, 0)) |+|
+        BitVector(paramCount) |+|
         nullBitmap(comStmtExecute.params.values.map(_.columnDataType).toList) |+|
         newParamsBindFlag |+|
         types |+|

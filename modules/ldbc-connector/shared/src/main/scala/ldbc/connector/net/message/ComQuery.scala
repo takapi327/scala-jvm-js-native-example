@@ -37,7 +37,7 @@ object ComQuery:
     val parameterCount = comQuery.params.size
 
     val parameter =
-      if hasQueryAttributes then BitVector(comQuery.params.size) |+| BitVector(0x01)
+      if hasQueryAttributes then BitVector(parameterCount) |+| BitVector(0x01)
       else BitVector.empty
 
     val nullBitmaps = if hasQueryAttributes && parameterCount > 0 then
@@ -50,7 +50,8 @@ object ComQuery:
         .toList
         .combineAll
 
-      nullBitmap(comQuery.params.keys.toList) |+|
+      BitVector(parameterCount) |+|
+        nullBitmap(comQuery.params.keys.toList) |+|
         BitVector(0x01) |+|
         names |+|
         BinaryProtocolValue(comQuery.params).encode
