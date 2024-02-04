@@ -6,6 +6,8 @@
 
 package ldbc.connector
 
+import scala.collection.immutable.ListMap
+
 import cats.syntax.all.*
 
 import cats.effect.*
@@ -19,7 +21,7 @@ trait PreparedStatement[F[_]: Concurrent]:
   def bms: BufferedMessageSocket[F]
   def params: Ref[
     F,
-    Map[Int, Parameter]
+    ListMap[Int, Parameter]
   ]
 
   def setNull(index: Int): F[Unit] =
@@ -91,13 +93,13 @@ object PreparedStatement:
     sql: String,
     params: Ref[
       F,
-      Map[Int, Parameter]
+      ListMap[Int, Parameter]
     ],
     capabilityFlags: Seq[CapabilitiesFlags]
   ) extends PreparedStatement[F]:
 
     private def buildQuery(
-      params: Map[Int, Parameter]
+      params: ListMap[Int, Parameter]
     ): String =
       val query = sql.toCharArray
       params
@@ -163,7 +165,7 @@ object PreparedStatement:
     bms:         BufferedMessageSocket[F],
     params: Ref[
       F,
-      Map[Int, Parameter]
+      ListMap[Int, Parameter]
     ]
   ) extends PreparedStatement[F]:
 

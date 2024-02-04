@@ -7,6 +7,7 @@
 package ldbc.connector.net
 
 import scala.concurrent.duration.Duration
+import scala.collection.immutable.ListMap
 
 import org.typelevel.otel4s.trace.Tracer
 
@@ -136,7 +137,7 @@ object Protocol:
         override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
           Ref[F]
             .of(
-              Map.empty[
+              ListMap.empty[
                 Int,
                 Parameter
               ]
@@ -155,7 +156,7 @@ object Protocol:
             _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
             _ <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
             params <- Ref[F].of(
-                        Map.empty[
+                        ListMap.empty[
                           Int,
                           Parameter
                         ]

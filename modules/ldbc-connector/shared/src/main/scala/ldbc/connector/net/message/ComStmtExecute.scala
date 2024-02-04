@@ -8,6 +8,8 @@ package ldbc.connector.net.message
 
 import java.util.Arrays.copyOf
 
+import scala.collection.immutable.ListMap
+
 import cats.syntax.all.*
 
 import scodec.*
@@ -20,7 +22,7 @@ import ldbc.connector.data.*
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
 case class ComStmtExecute(
   statementId: Long,
-  params:      Map[Int, Parameter]
+  params:      ListMap[Int, Parameter]
 ) extends Message:
 
   override protected def encodeBody: Attempt[BitVector] =
@@ -134,7 +136,7 @@ object ComStmtExecute:
               yield length |+| year |+| month |+| day |+| hour |+| minute |+| second |+| nano).require
       )
     }
-    
+
     val paramCount = comStmtExecute.params.size
 
     // Flag if parameters must be re-bound
