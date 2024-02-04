@@ -50,7 +50,7 @@ object ComQuery:
         .toList
         .combineAll
 
-      nullBitmap(comQuery.params.keys.map(_.code.toInt).toList) |+|
+      nullBitmap(comQuery.params.keys.toList) |+|
         BitVector(0x01) |+|
         names |+|
         BinaryProtocolValue(comQuery.params).encode

@@ -16,7 +16,6 @@ import scodec.codecs.*
 import scodec.interop.cats.*
 
 import ldbc.connector.data.*
-import ldbc.connector.util.DataType
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
 case class ComStmtExecute(
@@ -36,9 +35,7 @@ object ComStmtExecute:
   val encoder: Encoder[ComStmtExecute] = Encoder { comStmtExecute =>
 
     val types = comStmtExecute.params.values.foldLeft(BitVector.empty) { (acc, param) =>
-      param.columnDataType match
-        case ColumnDataType.MYSQL_TYPE_NULL => acc
-        case _ => acc |+| BitVector(param.columnDataType.code) |+| BitVector(0) |+| BitVector(0)
+      acc |+| BitVector(param.columnDataType.code) |+| BitVector(0) |+| BitVector(0)
     }
 
     val values = comStmtExecute.params.values.foldLeft(BitVector.empty) { (acc, param) =>
@@ -140,7 +137,7 @@ object ComStmtExecute:
 
     // Flag if parameters must be re-bound
     val newParamsBindFlag =
-      if comStmtExecute.params.values.map(_.columnDataType).toSeq.contains(DataType.MYSQL_TYPE_NULL) then BitVector(0)
+      if comStmtExecute.params.size == 1 && comStmtExecute.params.values.map(_.columnDataType).toSeq.contains(ColumnDataType.MYSQL_TYPE_NULL) then BitVector(0)
       else BitVector(1)
 
     Attempt.successful(
@@ -149,7 +146,7 @@ object ComStmtExecute:
         BitVector(Array[Byte](0, 0, 0)) |+|
         BitVector(EnumCursorType.PARAMETER_COUNT_AVAILABLE.code) |+|
         BitVector(Array[Byte](1, 0, 0, 0)) |+|
-        nullBitmap(comStmtExecute.params.values.map(_.columnDataType.code.toInt).toList) |+|
+        nullBitmap(comStmtExecute.params.values.map(_.columnDataType).toList) |+|
         newParamsBindFlag |+|
         types |+|
         values

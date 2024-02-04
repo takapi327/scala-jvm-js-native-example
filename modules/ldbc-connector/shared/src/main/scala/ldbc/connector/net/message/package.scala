@@ -11,11 +11,11 @@ import cats.syntax.all.*
 import scodec.bits.BitVector
 import scodec.interop.cats.*
 
-//import ldbc.connector.util.DataType
+import ldbc.connector.data.ColumnDataType
 
 package object message:
 
-  def nullBitmap(columns: List[Int]): BitVector =
+  def nullBitmap(columns: List[ColumnDataType]): BitVector =
     val count = columns.length
     if count > 0 then
       // val size = (count + 7) / 8
@@ -25,10 +25,10 @@ package object message:
       //  if index == size then acc
       //  else buildBitVector(index + 1, acc |+| BitVector(0))
 
-      // BitVector(count) |+| buildBitVector(0, BitVector.empty)
-      // BitVector(count) |+| BitVector(columns.map {
-      //  case DataType.MYSQL_TYPE_NULL => 1
-      //  case _ => 0
-      // }.sum)
-      BitVector(count) |+| BitVector(0)
+      //BitVector(count) |+| buildBitVector(0, BitVector.empty)
+      BitVector(count) |+| BitVector(columns.map {
+       case ColumnDataType.MYSQL_TYPE_NULL => 1
+       case _ => 1
+      }.sum)
+      //BitVector(count) |+| BitVector(0)
     else BitVector.empty
