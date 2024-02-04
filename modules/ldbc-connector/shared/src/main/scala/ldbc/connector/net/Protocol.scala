@@ -147,7 +147,9 @@ object Protocol:
           for
             result <- bms.changeCommandPhase *> bms.send(ComStmtPrepare(sql)) *>
                         bms.receive(ComStmtPrepareOkPacket.decoder).flatMap {
-                          case error: ERRPacket => Concurrent[F].raiseError(new Exception(s"Failed to prepare statement: ${ error.errorMessage }"))
+                          case error: ERRPacket =>
+                            Concurrent[F]
+                              .raiseError(new Exception(s"Failed to prepare statement: ${ error.errorMessage }"))
                           case result: ComStmtPrepareOkPacket => Concurrent[F].pure(result)
                         }
             _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)

@@ -8,5 +8,6 @@ package ldbc.connector.data
 
 case class Parameter(
   columnDataType: ColumnDataType,
-  value: None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
+  value: None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
+    java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
 )

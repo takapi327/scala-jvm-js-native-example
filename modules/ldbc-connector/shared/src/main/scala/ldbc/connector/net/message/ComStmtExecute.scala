@@ -21,7 +21,7 @@ import ldbc.connector.util.DataType
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
 case class ComStmtExecute(
   statementId: Long,
-  params: Map[Int, Parameter]
+  params:      Map[Int, Parameter]
 ) extends Message:
 
   override protected def encodeBody: Attempt[BitVector] =
@@ -139,10 +139,9 @@ object ComStmtExecute:
     }
 
     // Flag if parameters must be re-bound
-    val newParamsBindFlag = if comStmtExecute.params.values.map(_.columnDataType).toSeq.contains(DataType.MYSQL_TYPE_NULL) then
-      BitVector(0)
-    else
-      BitVector(1)
+    val newParamsBindFlag =
+      if comStmtExecute.params.values.map(_.columnDataType).toSeq.contains(DataType.MYSQL_TYPE_NULL) then BitVector(0)
+      else BitVector(1)
 
     Attempt.successful(
       BitVector(CommandId.COM_STMT_EXECUTE) |+|

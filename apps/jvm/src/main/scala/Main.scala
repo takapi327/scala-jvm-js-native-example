@@ -42,7 +42,7 @@ object Main extends IOApp:
         _ <- preparedStatement.setDate(1, java.time.LocalDate.of(2024, 10, 13))
         _ <- preparedStatement.setDate(2, java.time.LocalDate.of(2023, 10, 13))
         // _ <- preparedStatement.setTimestamp(java.time.LocalDateTime.of(2024, 2, 4, 22, 53, 55))
-        //_ <- preparedStatement.setNull()
+        // _ <- preparedStatement.setNull()
         result <-
           preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
       yield
@@ -70,9 +70,13 @@ object JDBC:
     Using
       .Manager { use =>
         val connection: JdbcConnection = use(dataSource.getConnection.asInstanceOf[JdbcConnection])
-        //val statement = use(connection.clientPrepareStatement("SELECT * FROM example.category WHERE name = ?"))
-        val statement = use(connection.serverPrepareStatement("SELECT * FROM example.category WHERE id = ? AND name = ? AND slug = ? AND color = ? AND updated_at = ?"))
-        //val statement = use(connection.createStatement())
+        // val statement = use(connection.clientPrepareStatement("SELECT * FROM example.category WHERE name = ?"))
+        val statement = use(
+          connection.serverPrepareStatement(
+            "SELECT * FROM example.category WHERE id = ? AND name = ? AND slug = ? AND color = ? AND updated_at = ?"
+          )
+        )
+        // val statement = use(connection.createStatement())
         statement.setLong(1, 2L)
         statement.setString(2, "foo")
         statement.setNull(3, java.sql.Types.NULL)
