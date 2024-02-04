@@ -16,16 +16,12 @@ import scodec.codecs.*
 import scodec.interop.cats.*
 
 import ldbc.connector.data.*
+import ldbc.connector.util.DataType
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
 case class ComStmtExecute(
   statementId: Long,
-  numParams:   Int,
-  params: Map[
-    Int,
-    None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
-      java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
-  ]
+  params: Map[Int, Parameter]
 ) extends Message:
 
   override protected def encodeBody: Attempt[BitVector] =
@@ -39,12 +35,15 @@ object ComStmtExecute:
 
   val encoder: Encoder[ComStmtExecute] = Encoder { comStmtExecute =>
 
-    val types = comStmtExecute.params.keys.foldLeft(BitVector.empty) { (acc, value) =>
-      acc |+| BitVector(value) |+| BitVector(0) |+| BitVector(0)
+    val types = comStmtExecute.params.values.foldLeft(BitVector.empty) { (acc, param) =>
+      param.columnDataType match
+        case ColumnDataType.MYSQL_TYPE_NULL => acc
+        case _ => acc |+| BitVector(param.columnDataType.code) |+| BitVector(0) |+| BitVector(0)
     }
 
-    val values = comStmtExecute.params.values.foldLeft(BitVector.empty) { (acc, value) =>
-      acc |+| (value match
+    val values = comStmtExecute.params.values.foldLeft(BitVector.empty) { (acc, param) =>
+      acc |+| (param.value match
+        case None             => BitVector.empty
         case boolean: Boolean => uint8L.encode(if boolean then 1 else 0).require
         case byte: Byte       => uint8L.encode(byte).require
         case short: Short     => uint16L.encode(short).require
@@ -136,9 +135,14 @@ object ComStmtExecute:
                 second <- uint32L.encode(second)
                 nano   <- uint32L.encode(nano)
               yield length |+| year |+| month |+| day |+| hour |+| minute |+| second |+| nano).require
-        case _ => throw new RuntimeException("Not implemented yet")
       )
     }
+
+    // Flag if parameters must be re-bound
+    val newParamsBindFlag = if comStmtExecute.params.values.map(_.columnDataType).toSeq.contains(DataType.MYSQL_TYPE_NULL) then
+      BitVector(0)
+    else
+      BitVector(1)
 
     Attempt.successful(
       BitVector(CommandId.COM_STMT_EXECUTE) |+|
@@ -146,8 +150,8 @@ object ComStmtExecute:
         BitVector(Array[Byte](0, 0, 0)) |+|
         BitVector(EnumCursorType.PARAMETER_COUNT_AVAILABLE.code) |+|
         BitVector(Array[Byte](1, 0, 0, 0)) |+|
-        nullBitmap(comStmtExecute.numParams) |+|
-        BitVector(1) |+| // new_params_bind_flag,	Always 1. Malformed packet error if not 1
+        nullBitmap(comStmtExecute.params.values.map(_.columnDataType.code.toInt).toList) |+|
+        newParamsBindFlag |+|
         types |+|
         values
     )

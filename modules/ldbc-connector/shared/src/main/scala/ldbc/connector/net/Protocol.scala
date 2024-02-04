@@ -24,6 +24,7 @@ import ldbc.connector.net.protocol.Exchange
 import ldbc.connector.net.message.*
 import ldbc.connector.net.packet.*
 import ldbc.connector.authenticator.*
+import ldbc.connector.data.Parameter
 
 /**
  * Interface for a MySQL database, expressed through high-level operations that rely on exchange
@@ -137,8 +138,7 @@ object Protocol:
             .of(
               Map.empty[
                 Int,
-                None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
-                  java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
+                Parameter
               ]
             )
             .map(params => PreparedStatement.Client[F](bms, sql, params, initialPacket.capabilityFlags))
@@ -147,7 +147,7 @@ object Protocol:
           for
             result <- bms.changeCommandPhase *> bms.send(ComStmtPrepare(sql)) *>
                         bms.receive(ComStmtPrepareOkPacket.decoder).flatMap {
-                          case _: ERRPacket => Concurrent[F].raiseError(new Exception("Failed to prepare statement"))
+                          case error: ERRPacket => Concurrent[F].raiseError(new Exception(s"Failed to prepare statement: ${ error.errorMessage }"))
                           case result: ComStmtPrepareOkPacket => Concurrent[F].pure(result)
                         }
             _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
@@ -155,11 +155,10 @@ object Protocol:
             params <- Ref[F].of(
                         Map.empty[
                           Int,
-                          None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String |
-                            Array[Byte] | java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
+                          Parameter
                         ]
                       )
-          yield PreparedStatement.Server[F](result.statementId, result.numParams, bms, params)
+          yield PreparedStatement.Server[F](result.statementId, bms, params)
 
         override def close(): F[Unit] = bms.changeCommandPhase *> bms.send(ComQuit())
     }

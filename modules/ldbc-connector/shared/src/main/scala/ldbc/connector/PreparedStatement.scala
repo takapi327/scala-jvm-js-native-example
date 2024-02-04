@@ -12,62 +12,57 @@ import cats.effect.*
 
 import ldbc.connector.net.message.*
 import ldbc.connector.net.packet.*
-import ldbc.connector.util.DataType
-import ldbc.connector.data.CapabilitiesFlags
+import ldbc.connector.data.*
 
 trait PreparedStatement[F[_]: Concurrent]:
 
   def bms: BufferedMessageSocket[F]
   def params: Ref[
     F,
-    Map[
-      Int,
-      None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
-        java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
-    ]
+    Map[Int, Parameter]
   ]
 
-  def setNull(): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_NULL -> None))
+  def setNull(index: Int): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_NULL, None)))
 
-  def setBoolean(value: Boolean): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_TINY -> value))
+  def setBoolean(index: Int, value: Boolean): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_TINY, value)))
 
-  def setByte(value: Byte): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_TINY -> value))
+  def setByte(index: Int, value: Byte): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_TINY, value)))
 
-  def setShort(value: Short): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_SHORT -> value))
+  def setShort(index: Int, value: Short): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_SHORT, value)))
 
-  def setInt(value: Int): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_LONG -> value))
+  def setInt(index: Int, value: Int): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_LONG, value)))
 
-  def setLong(value: Long): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_LONGLONG -> value))
+  def setLong(index: Int, value: Long): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_LONGLONG, value)))
 
-  def setFloat(value: Float): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_FLOAT -> value))
+  def setFloat(index: Int, value: Float): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_FLOAT, value)))
 
-  def setDouble(value: Double): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_DOUBLE -> value))
+  def setDouble(index: Int, value: Double): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_DOUBLE, value)))
 
-  def setBigDecimal(value: BigDecimal): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_NEWDECIMAL -> value))
+  def setBigDecimal(index: Int, value: BigDecimal): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_NEWDECIMAL, value)))
 
-  def setString(value: String): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
+  def setString(index: Int, value: String): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_VAR_STRING, value)))
 
-  def setBytes(value: Array[Byte]): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_VAR_STRING -> value))
+  def setBytes(index: Int, value: Array[Byte]): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_VAR_STRING, value)))
 
-  def setTime(value: java.time.LocalTime): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_TIME -> value))
+  def setTime(index: Int, value: java.time.LocalTime): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_TIME, value)))
 
-  def setDate(value: java.time.LocalDate): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_DATE -> value))
+  def setDate(index: Int, value: java.time.LocalDate): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_DATE, value)))
 
-  def setTimestamp(value: java.time.LocalDateTime): F[Unit] =
-    params.update(_ + (DataType.MYSQL_TYPE_TIMESTAMP -> value))
+  def setTimestamp(index: Int, value: java.time.LocalDateTime): F[Unit] =
+    params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_TIMESTAMP, value)))
 
   protected def repeatProcess[P <: Packet](times: Int, decoder: scodec.Decoder[P]): F[List[P]] =
     def read(remaining: Int, acc: List[P]): F[List[P]] =
@@ -96,32 +91,24 @@ object PreparedStatement:
     sql: String,
     params: Ref[
       F,
-      Map[
-        Int,
-        None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
-          java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
-      ]
+      Map[Int, Parameter]
     ],
     capabilityFlags: Seq[CapabilitiesFlags]
   ) extends PreparedStatement[F]:
 
     private def buildQuery(
-      params: Map[
-        None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
-          java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime,
-        Int
-      ]
+      params: Map[Int, Parameter]
     ): String =
       val query = sql.toCharArray
       params
         .foldLeft(query) {
-          case (query, (value, offset)) =>
-            val index = query.indexOf('?', offset)
+          case (query, (offset, param)) =>
+            val index = query.indexOf('?', offset - 1)
             if index < 0 then query
             else
               val (head, tail)         = query.splitAt(index)
               val (tailHead, tailTail) = tail.splitAt(1)
-              val newValue = value match
+              val newValue = param.value match
                 case None          => "NULL".toCharArray
                 case v: Boolean    => v.toString.toCharArray
                 case v: Byte       => v.toString.toCharArray
@@ -138,7 +125,6 @@ object PreparedStatement:
                 case v: java.time.LocalTime     => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
                 case v: java.time.LocalDate     => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
                 case v: java.time.LocalDateTime => "'".toCharArray ++ v.toString.toCharArray ++ "'".toCharArray
-                // case _          => throw new IllegalArgumentException("Unsupported type")
               head ++ newValue ++ tailTail
         }
         .mkString
@@ -147,7 +133,7 @@ object PreparedStatement:
       for
         params <- params.get
         columnCount <- bms.changeCommandPhase *>
-                         bms.send(ComQuery(buildQuery(params.values.zipWithIndex.toMap), capabilityFlags, Map.empty)) *>
+                         bms.send(ComQuery(buildQuery(params), capabilityFlags, Map.empty)) *>
                          bms.receive(ColumnsNumberPacket.decoder).flatMap {
                            case error: ERRPacket =>
                              Concurrent[F]
@@ -174,15 +160,10 @@ object PreparedStatement:
 
   case class Server[F[_]: Concurrent](
     statementId: Long,
-    numParams:   Int,
     bms:         BufferedMessageSocket[F],
     params: Ref[
       F,
-      Map[
-        Int,
-        None.type | Boolean | Byte | Short | Int | Long | Float | Double | BigDecimal | String | Array[Byte] |
-          java.time.LocalTime | java.time.LocalDate | java.time.LocalDateTime
-      ]
+      Map[Int, Parameter]
     ]
   ) extends PreparedStatement[F]:
 
@@ -192,7 +173,6 @@ object PreparedStatement:
         columnCount <- bms.changeCommandPhase *> bms.send(
                          ComStmtExecute(
                            statementId,
-                           numParams,
                            params
                          )
                        ) *> bms.receive(ColumnsNumberPacket.decoder).flatMap {
