@@ -141,7 +141,11 @@ object ComStmtExecute:
 
     // Flag if parameters must be re-bound
     val newParamsBindFlag =
-      if paramCount == 1 && comStmtExecute.params.values.map(_.columnDataType).toSeq.contains(ColumnDataType.MYSQL_TYPE_NULL) then BitVector(0)
+      if paramCount == 1 && comStmtExecute.params.values
+          .map(_.columnDataType)
+          .toSeq
+          .contains(ColumnDataType.MYSQL_TYPE_NULL)
+      then BitVector(0)
       else BitVector(1)
 
     Attempt.successful(
