@@ -36,11 +36,13 @@ object Main extends IOApp:
         //            )
         preparedStatement <-
           session.serverPreparedStatement(
-            "SELECT id, name, slug, color, p1, updated_at, created_at FROM example.category WHERE date <= ?"
+            "SELECT id, name, slug, color, p1, updated_at, created_at FROM example.category WHERE `date` <= ? AND `date` >= ?"
           )
-        _ <- preparedStatement.setDate(
-               java.time.LocalDate.of(2024, 10, 13)
-             ) // *> preparedStatement.setString("Category 1")
+        // _ <- preparedStatement.setTime(java.time.LocalTime.of(22, 53, 55))
+        _ <- preparedStatement.setDate(1, java.time.LocalDate.of(2024, 10, 13))
+        _ <- preparedStatement.setDate(2, java.time.LocalDate.of(2023, 10, 13))
+        // _ <- preparedStatement.setTimestamp(java.time.LocalDateTime.of(2024, 2, 4, 22, 53, 55))
+        //_ <- preparedStatement.setNull()
         result <-
           preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
       yield
@@ -68,12 +70,15 @@ object JDBC:
     Using
       .Manager { use =>
         val connection: JdbcConnection = use(dataSource.getConnection.asInstanceOf[JdbcConnection])
-        // val statement = use(connection.prepareStatement("SELECT * FROM example.category WHERE name = ?"))
-        // val statement = connection.serverPrepareStatement("SELECT * FROM example.category WHERE id = ? AND slug = ?")
-        val statement = use(connection.createStatement())
-        // statement.setLong(1, 1L)
-        // statement.setString(2, "foo")
-        val resultSet = use(statement.executeQuery("SELECT * FROM example.category WHERE id = 1 AND slug = 'foo'"))
+        //val statement = use(connection.clientPrepareStatement("SELECT * FROM example.category WHERE name = ?"))
+        val statement = use(connection.serverPrepareStatement("SELECT * FROM example.category WHERE id = ? AND name = ? AND slug = ? AND color = ? AND updated_at = ?"))
+        //val statement = use(connection.createStatement())
+        statement.setLong(1, 2L)
+        statement.setString(2, "foo")
+        statement.setNull(3, java.sql.Types.NULL)
+        statement.setShort(4, 1)
+        statement.setTimestamp(5, java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()))
+        val resultSet = use(statement.executeQuery())
         // val resultSet = use(statement.executeQuery("SELECT * FROM example.category WHERE name = 'foo'"))
         val records = List.newBuilder[(Long, String, String, Short, java.sql.Timestamp, java.sql.Timestamp)]
         while resultSet.next() do {

@@ -37,7 +37,7 @@ object Main extends IOApp:
         preparedStatement <- session.clientPreparedStatement(
                                "SELECT * FROM example.category WHERE p1 = ?"
                              )
-        _ <- preparedStatement.setBoolean(false) // *> preparedStatement.setString("Category 1")
+        _ <- preparedStatement.setBoolean(1, false) // *> preparedStatement.setString("Category 1")
         result <-
           preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
       yield
