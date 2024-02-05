@@ -105,7 +105,8 @@ object Protocol:
           }
 
         override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
-          Ref[F].of(ListMap.empty[Int, Parameter])
+          Ref[F]
+            .of(ListMap.empty[Int, Parameter])
             .map(params => PreparedStatement.Client[F](bms, sql, params, initialPacket.capabilityFlags))
 
         override def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]] =
@@ -117,8 +118,8 @@ object Protocol:
                               .raiseError(new Exception(s"Failed to prepare statement: ${ error.errorMessage }"))
                           case result: ComStmtPrepareOkPacket => Concurrent[F].pure(result)
                         }
-            _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
-            _ <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
+            _      <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
+            _      <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
             params <- Ref[F].of(ListMap.empty[Int, Parameter])
           yield PreparedStatement.Server[F](result.statementId, bms, params)
 

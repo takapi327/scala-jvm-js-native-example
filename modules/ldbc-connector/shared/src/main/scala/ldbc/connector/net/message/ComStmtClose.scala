@@ -24,8 +24,8 @@ case class ComStmtClose(statementId: Long) extends Message:
   override def toString: String = "COM_STMT_CLOSE Request"
 
 object ComStmtClose:
-  
-  val encoder: Encoder[ComStmtClose] = Encoder(comStmtClose => 
+
+  val encoder: Encoder[ComStmtClose] = Encoder(comStmtClose =>
     Attempt.Successful(
       BitVector(CommandId.COM_STMT_CLOSE) |+|
         BitVector(comStmtClose.statementId) |+|

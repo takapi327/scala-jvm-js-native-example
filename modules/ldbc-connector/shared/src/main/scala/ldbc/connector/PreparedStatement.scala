@@ -18,7 +18,7 @@ import ldbc.connector.data.*
 
 trait PreparedStatement[F[_]: Concurrent]:
 
-  def bms: BufferedMessageSocket[F]
+  def bms:    BufferedMessageSocket[F]
   def params: Ref[F, ListMap[Int, Parameter]]
 
   def setNull(index: Int): F[Unit] =
