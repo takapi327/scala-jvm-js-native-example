@@ -19,10 +19,7 @@ import ldbc.connector.data.*
 trait PreparedStatement[F[_]: Concurrent]:
 
   def bms: BufferedMessageSocket[F]
-  def params: Ref[
-    F,
-    ListMap[Int, Parameter]
-  ]
+  def params: Ref[F, ListMap[Int, Parameter]]
 
   def setNull(index: Int): F[Unit] =
     params.update(_ + (index -> Parameter(ColumnDataType.MYSQL_TYPE_NULL, None)))
@@ -85,6 +82,8 @@ trait PreparedStatement[F[_]: Concurrent]:
     }
 
   def executeQuery[A](codec: ldbc.connector.Codec[A]): F[List[A]]
+
+  def close(): F[Unit]
 
 object PreparedStatement:
 
@@ -160,6 +159,8 @@ object PreparedStatement:
             case Right(value) => value
         )
 
+    override def close(): F[Unit] = Concurrent[F].unit
+
   case class Server[F[_]: Concurrent](
     statementId: Long,
     bms:         BufferedMessageSocket[F],
@@ -199,3 +200,5 @@ object PreparedStatement:
                                                   |""".stripMargin)
           case Right(value) => value
       )
+
+    override def close(): F[Unit] = bms.changeCommandPhase *> bms.send(ComStmtClose(statementId))

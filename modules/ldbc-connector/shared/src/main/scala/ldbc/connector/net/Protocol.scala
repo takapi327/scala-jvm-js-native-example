@@ -135,13 +135,7 @@ object Protocol:
             )
 
         override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
-          Ref[F]
-            .of(
-              ListMap.empty[
-                Int,
-                Parameter
-              ]
-            )
+          Ref[F].of(ListMap.empty[Int, Parameter])
             .map(params => PreparedStatement.Client[F](bms, sql, params, initialPacket.capabilityFlags))
 
         override def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]] =
@@ -155,12 +149,7 @@ object Protocol:
                         }
             _ <- repeatProcess(result.numParams, ParameterDefinitionPacket.decoder)
             _ <- repeatProcess(result.numColumns, ColumnDefinitionPacket.decoder)
-            params <- Ref[F].of(
-                        ListMap.empty[
-                          Int,
-                          Parameter
-                        ]
-                      )
+            params <- Ref[F].of(ListMap.empty[Int, Parameter])
           yield PreparedStatement.Server[F](result.statementId, bms, params)
 
         override def close(): F[Unit] = bms.changeCommandPhase *> bms.send(ComQuit())
