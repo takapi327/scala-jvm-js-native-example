@@ -39,8 +39,6 @@ trait Protocol[F[_]]:
 
   def authenticate(user: String, password: String): F[Unit]
 
-  def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]]
-
   def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]]
 
   def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]]
@@ -105,34 +103,6 @@ object Protocol:
             case _: EOFPacket            => Concurrent[F].pure(acc)
             case row: ResultSetRowPacket => readUntilEOF(columns, acc :+ row)
           }
-
-        override def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]] =
-          for
-            columnCount <- bms.changeCommandPhase *>
-                             bms.send(ComQuery(sql, initialPacket.capabilityFlags, Map.empty)) *>
-                             bms.receive(ColumnsNumberPacket.decoder).flatMap {
-                               case error: ERRPacket =>
-                                 Concurrent[F]
-                                   .raiseError(new Exception(s"Failed to execute query: ${ error.errorMessage }"))
-                               case result: ColumnsNumberPacket => Concurrent[F].pure(result)
-                             }
-            columns      <- repeatProcess(columnCount.columnCount, ColumnDefinitionPacket.decoder)
-            resultSetRow <- readUntilEOF(columns, Nil)
-          yield resultSetRow
-            .map(row =>
-              codec.decode(0, row.value) match
-                case Left(value) =>
-                  val column = columns(value.offset)
-                  throw new IllegalArgumentException(s"""
-                  |==========================
-                  |Failed to decode column: `${ column.name }`
-                  |Decode To: ${ column.columnType } -> ${ value.`type`.name.toUpperCase }
-                  |
-                  |Message [ ${ value.message } ]
-                  |==========================
-                  |""".stripMargin)
-                case Right(value) => value
-            )
 
         override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
           Ref[F].of(ListMap.empty[Int, Parameter])

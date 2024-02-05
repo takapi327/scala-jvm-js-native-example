@@ -27,8 +27,6 @@ import ldbc.connector.exception.LdbcException
 
 trait Session[F[_]]:
 
-  def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]]
-
   def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]]
 
   def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]]
@@ -115,9 +113,6 @@ object Session:
       protocol <- Protocol[F](debug, sockets, sslOptions, readTimeout)
       _        <- Resource.eval(protocol.authenticate(user, password.getOrElse("")))
     yield new Impl[F]:
-      override def executeQuery[A](sql: String)(codec: ldbc.connector.Codec[A]): F[List[A]] =
-        protocol.executeQuery(sql)(codec)
-
       override def clientPreparedStatement(sql: String): F[PreparedStatement.Client[F]] =
         protocol.clientPreparedStatement(sql)
       override def serverPreparedStatement(sql: String): F[PreparedStatement.Server[F]] =
