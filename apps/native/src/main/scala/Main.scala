@@ -35,12 +35,21 @@ object Main extends IOApp:
         // result <- session.executeQuery("SELECT * FROM example.category")(
         //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
         //            )
-        preparedStatement <- session.clientPreparedStatement(
-                               "SELECT * FROM example.category WHERE p1 = ?"
-                             )
-        _ <- preparedStatement.setBoolean(1, false) // *> preparedStatement.setString("Category 1")
+        preparedStatement <-
+          session.clientPreparedStatement(
+            "SELECT id, name, slug, color, p1, updated_at, created_at FROM example.category WHERE `id` = ? AND `name` = ? AND `date` <=> ?"
+          )
+        _ <- preparedStatement.setLong(1, 2L)
+        _ <- preparedStatement.setString(2, "Category 2")
+        // _ <- preparedStatement.setTime(java.time.LocalTime.of(22, 53, 55))
+        // _ <- preparedStatement.setString(3, "category-2")
+        // _ <- preparedStatement.setDate(2, java.time.LocalDate.of(2023, 10, 13))
+        // _ <- preparedStatement.setTimestamp(java.time.LocalDateTime.of(2024, 2, 4, 22, 53, 55))
+        _ <- preparedStatement.setNull(3)
+        // _ <- preparedStatement.setShort(5, 1)
         result <-
           preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
+            <* preparedStatement.close()
       yield
         result.foreach {
           case (id, name, slug, color, p1, updatedAt, createdAt) =>

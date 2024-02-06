@@ -35,16 +35,20 @@ object Main extends IOApp:
         //              bigint *: varchar *: varchar *: tinyint *: timestamp *: timestamp
         //            )
         preparedStatement <-
-          session.serverPreparedStatement(
-            "SELECT id, name, slug, color, p1, updated_at, created_at FROM example.category WHERE `date` <= ? AND `date` >= ?"
+          session.clientPreparedStatement(
+            "SELECT id, name, slug, color, p1, updated_at, created_at FROM example.category WHERE `id` = ? AND `name` = ? AND `date` <=> ?"
           )
+        _ <- preparedStatement.setLong(1, 2L)
+        _ <- preparedStatement.setString(2, "Category 2")
         // _ <- preparedStatement.setTime(java.time.LocalTime.of(22, 53, 55))
-        _ <- preparedStatement.setDate(1, java.time.LocalDate.of(2024, 10, 13))
-        _ <- preparedStatement.setDate(2, java.time.LocalDate.of(2023, 10, 13))
+        // _ <- preparedStatement.setString(3, "category-2")
+        // _ <- preparedStatement.setDate(2, java.time.LocalDate.of(2023, 10, 13))
         // _ <- preparedStatement.setTimestamp(java.time.LocalDateTime.of(2024, 2, 4, 22, 53, 55))
-        // _ <- preparedStatement.setNull()
+        _ <- preparedStatement.setNull(3)
+        // _ <- preparedStatement.setShort(5, 1)
         result <-
           preparedStatement.executeQuery(bigint *: varchar *: varchar *: tinyint *: boolean *: timestamp *: timestamp)
+            <* preparedStatement.close()
       yield
         result.foreach {
           case (id, name, slug, color, p1, updatedAt, createdAt) =>
@@ -72,16 +76,17 @@ object JDBC:
         val connection: JdbcConnection = use(dataSource.getConnection.asInstanceOf[JdbcConnection])
         // val statement = use(connection.clientPrepareStatement("SELECT * FROM example.category WHERE name = ?"))
         val statement = use(
-          connection.serverPrepareStatement(
-            "SELECT * FROM example.category WHERE id = ? AND name = ? AND slug = ? AND color = ? AND updated_at = ?"
+          connection.clientPrepareStatement(
+            "SELECT id, name, slug, color, p1, updated_at, created_at FROM example.category WHERE `id` = ? AND `name` = ? AND `date` >= ? AND slug = ? AND color = ?"
           )
         )
         // val statement = use(connection.createStatement())
         statement.setLong(1, 2L)
         statement.setString(2, "foo")
-        statement.setNull(3, java.sql.Types.NULL)
-        statement.setShort(4, 1)
-        statement.setTimestamp(5, java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()))
+        statement.setDate(3, java.sql.Date.valueOf(java.time.LocalDate.of(2024, 10, 13)))
+        statement.setNull(4, java.sql.Types.NULL)
+        statement.setShort(5, 1)
+        // statement.setTimestamp(5, java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()))
         val resultSet = use(statement.executeQuery())
         // val resultSet = use(statement.executeQuery("SELECT * FROM example.category WHERE name = 'foo'"))
         val records = List.newBuilder[(Long, String, String, Short, java.sql.Timestamp, java.sql.Timestamp)]
