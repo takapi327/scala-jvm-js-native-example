@@ -15,7 +15,7 @@ package object message:
 
   def nullBitmap(columns: List[ColumnDataType]): BitVector =
     if columns.nonEmpty then
-      val bitmap = columns.reverse.foldLeft(0) { (bitmap, param) =>
+      val bitmap = columns.foldLeft(0) { (bitmap, param) =>
         (bitmap << 1) | (
           param match
             case ColumnDataType.MYSQL_TYPE_NULL => 1
