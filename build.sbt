@@ -89,7 +89,7 @@ lazy val native = (project in file("apps/native"))
   .dependsOn(connector.native)
   .enablePlugins(ScalaNativePlugin)
 
-lazy val root = (project in file("."))
+lazy val root = tlCrossRootProject
   .settings(name := "scala-jvm-js-native-example")
   .settings(compileSettings)
-  .aggregate(jvm, js, native, connector.jvm, connector.js, connector.native)
+  .aggregate(jvm, js, native, connector)
